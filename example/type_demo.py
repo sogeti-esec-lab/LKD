@@ -7,7 +7,12 @@ else:
     sys.path.append(os.path.realpath("."))
 
 from dbginterface import LocalKernelDebugger
+import windows
 
+# This demo works on 32bits kernel only because
+# in _KPCR fieldnames are not the same (IDT / IdtBase, ...)
+if windows.system.bitness != 32:
+    raise ValueError("Test for kernel32 only")
 
 # A lot of IDebugSymbols functions need a type identifier (TypeId) to
 # perform operation on said type
