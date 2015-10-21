@@ -1,0 +1,889 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dbginterface module &mdash; LocalKernelDebugger 0.42 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.42',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="LocalKernelDebugger 0.42 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to LocalKernelDebugger’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to LocalKernelDebugger’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">LocalKernelDebugger 0.42 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="dbginterface-module">
+<h1>dbginterface module<a class="headerlink" href="#dbginterface-module" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="Symbol">
+<em class="property">class </em><tt class="descname">Symbol</tt><a class="headerlink" href="#Symbol" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Not a real class, a function accepting a Symbol means it can accept:</div>
+<div class="line-block">
+<div class="line">- A valid windbg symbol (&#8220;nt!CreateFile&#8221;)</div>
+<div class="line">- An address</div>
+</div>
+</div>
+</dd></dl>
+
+<span class="target" id="module-dbginterface"></span><dl class="class">
+<dt id="dbginterface.LocalKernelDebuggerBase">
+<em class="property">class </em><tt class="descclassname">dbginterface.</tt><tt class="descname">LocalKernelDebuggerBase</tt><big>(</big><em>quiet=True</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_number_modules">
+<tt class="descname">get_number_modules</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_number_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of loaded and unloaded modules</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Number of loaded, unloaded modules &#8211; int, int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_module_by_index">
+<tt class="descname">get_module_by_index</tt><big>(</big><em>i</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_module_by_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the base of module number <strong>i</strong></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_module_name_by_index">
+<tt class="descname">get_module_name_by_index</tt><big>(</big><em>i</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_module_name_by_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name of module number <strong>i</strong></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.resolve_symbol">
+<tt class="descname">resolve_symbol</tt><big>(</big><em>symbol</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.resolve_symbol" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Return <strong>symbol</strong> if it&#8217;s an <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a> else resolve it using <a class="reference internal" href="#dbginterface.LocalKernelDebuggerBase.get_symbol_offset" title="dbginterface.LocalKernelDebuggerBase.get_symbol_offset"><tt class="xref py py-func docutils literal"><span class="pre">get_symbol_offset()</span></tt></a></div>
+<div class="line">Used by functions to either accept an <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a> or a windbg <a class="reference internal" href="#Symbol" title="Symbol"><tt class="xref py py-class docutils literal"><span class="pre">Symbol</span></tt></a></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.resolve_type">
+<tt class="descname">resolve_type</tt><big>(</big><em>imodule</em>, <em>itype</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.resolve_type" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Return <strong>imodule</strong> and <strong>itype</strong>  if they are an <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a> else</div>
+<div class="line">resolve then using respectively <a class="reference internal" href="#dbginterface.LocalKernelDebuggerBase.get_symbol_offset" title="dbginterface.LocalKernelDebuggerBase.get_symbol_offset"><tt class="xref py py-func docutils literal"><span class="pre">get_symbol_offset()</span></tt></a> and <a class="reference internal" href="#dbginterface.LocalKernelDebuggerBase.get_type_id" title="dbginterface.LocalKernelDebuggerBase.get_type_id"><tt class="xref py py-func docutils literal"><span class="pre">get_type_id()</span></tt></a></div>
+<div class="line">Used by functions about types to either accept <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a> or windbg <a class="reference internal" href="#Symbol" title="Symbol"><tt class="xref py py-class docutils literal"><span class="pre">Symbol</span></tt></a></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.execute">
+<tt class="descname">execute</tt><big>(</big><em>str</em>, <em>to_string=False</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.execute" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Execute a windbg command</div>
+<div class="line">if <strong>to_string</strong> is False, use the current output callback</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">example\output_demo.py</span></tt>)</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.set_output_callbacks">
+<tt class="descname">set_output_callbacks</tt><big>(</big><em>callback</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.set_output_callbacks" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Register a new output callback, that must respect the interface of</div>
+<div class="line"><tt class="xref py py-func docutils literal"><span class="pre">IDebugOutputCallbacks::Output()</span></tt> <a class="reference external" href="https://msdn.microsoft.com/en-us/library/windows/hardware/ff550815%28v=vs.85%29.aspx">https://msdn.microsoft.com/en-us/library/windows/hardware/ff550815%28v=vs.85%29.aspx</a>.</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">example\output_demo.py</span></tt>)</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_modules">
+<tt class="descname">get_modules</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_modules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of (currModuleName, currImageName, currLoadedImageName)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.reload">
+<tt class="descname">reload</tt><big>(</big><em>module_to_reload=''</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.reload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reload a module or all modules if <strong>module_to_reload</strong> is not specified</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.detach">
+<tt class="descname">detach</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.detach" title="Permalink to this definition">¶</a></dt>
+<dd><p>End the Debugging session and detach the COM interface</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.current_processor">
+<tt class="descname">current_processor</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.current_processor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The number of the processor we are currently on &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.set_current_processor">
+<tt class="descname">set_current_processor</tt><big>(</big><em>proc_nb</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.set_current_processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the processor we want to be executed on</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>proc_nb</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the number of the processor</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.number_processor">
+<tt class="descname">number_processor</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.number_processor" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The number of processors on the machine &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.on_each_processor">
+<tt class="descname">on_each_processor</tt><big>(</big><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.on_each_processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iter execution on every processor</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Yield:</th><td class="field-body">current processor number</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_type_id">
+<tt class="descname">get_type_id</tt><big>(</big><em>module</em>, <em>type_name</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_type_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the typeid of a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>module</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; the module containing the type</li>
+<li><strong>type_name</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; the name of the type</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">int</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_symbol_type_id">
+<tt class="descname">get_symbol_type_id</tt><big>(</big><em>symtype</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_symbol_type_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the module and typeid of a symbol</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>symtype</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; the name of the type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int, int &#8211; module ID, type ID</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_field_offset">
+<tt class="descname">get_field_offset</tt><big>(</big><em>module</em>, <em>typeid</em>, <em>field</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_field_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the offset of a field in a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_type_name">
+<tt class="descname">get_type_name</tt><big>(</big><em>module</em>, <em>typeid</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_type_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name of a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_type_size">
+<tt class="descname">get_type_size</tt><big>(</big><em>module</em>, <em>typeid</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_type_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the size of a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_field_name">
+<tt class="descname">get_field_name</tt><big>(</big><em>module</em>, <em>typeid</em>, <em>fieldindex</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_field_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the name of a field in a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fieldindex</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Index of the field to retrieve</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_field_type_and_offset">
+<tt class="descname">get_field_type_and_offset</tt><big>(</big><em>module</em>, <em>typeid</em>, <em>fieldname</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_field_type_and_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the type and the offset of a field in a type</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fieldname</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The name of the field we want</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int, int &#8211; type ID, field offset</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.trim_ulong64_to_address">
+<tt class="descname">trim_ulong64_to_address</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.trim_ulong64_to_address" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Used to convert a symbol ULONG64 to the actual symbol.</div>
+<div class="line">Problem is that in a 32bits kernel the kernel address are bit expended</div>
+<div class="line"><tt class="file docutils literal"><span class="pre">nt</span></tt> in 32bits kernel would not be <tt class="file docutils literal"><span class="pre">0x8xxxxxxx</span></tt> but <tt class="file docutils literal"><span class="pre">0xffffffff8xxxxxxx</span></tt></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.expand_address_to_ulong64">
+<tt class="descname">expand_address_to_ulong64</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.expand_address_to_ulong64" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Used to convert a symbol address to an ULONG64 requested by the API.</div>
+<div class="line">Problem is that in a 32bits kernel the kernel address are bit expended</div>
+<div class="line"><tt class="file docutils literal"><span class="pre">nt</span></tt> in 32bits kernel would not be <tt class="file docutils literal"><span class="pre">0x8xxxxxxx</span></tt> but <tt class="file docutils literal"><span class="pre">0xffffffff8xxxxxxx</span></tt></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_symbol_offset">
+<tt class="descname">get_symbol_offset</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_symbol_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the address of a symbol</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>name</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Name of the symbol</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.get_symbol">
+<tt class="descname">get_symbol</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.get_symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the symbol and displacement of an address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>addr</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The address to lookup</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str, int &#8211; symbol name, displacement</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.symbol_match">
+<tt class="descname">symbol_match</tt><big>(</big><em>symbol_pattern</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.symbol_match" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;generator&gt;</div>
+<div class="line">List of symbol (name, address) that match a symbol pattern</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>symbol_pattern</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The symbol pattern (nt!Create*, <a href="#id1"><span class="problematic" id="id2">*</span></a>!CreateFile, ..)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Yield:</th><td class="field-body">str, int &#8211; symbol name, symbol address</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_virtual_memory">
+<tt class="descname">read_virtual_memory</tt><big>(</big><em>addr</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_virtual_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the memory at a given virtual address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>addr</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; The Symbol to read from</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The size to read</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_virtual_memory">
+<tt class="descname">write_virtual_memory</tt><big>(</big><em>addr</em>, <em>data</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_virtual_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write data to a given virtual address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>addr</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; The Symbol to write to</li>
+<li><strong>size</strong> (<em>str or ctypes.Structure</em>) &#8211; The Data to write</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the size written &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_pfv_memory">
+<tt class="descname">write_pfv_memory</tt><big>(</big><em>addr</em>, <em>data</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_pfv_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write physical memory from virtual address
+Exactly the same as write_physical(virtual_to_physical(addr), data)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_virtual_memory_into">
+<tt class="descname">read_virtual_memory_into</tt><big>(</big><em>addr</em>, <em>struct</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_virtual_memory_into" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8220;Read the memory at a given virtual address into a ctypes Structure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>addr</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; The Symbol to read from</li>
+<li><strong>struct</strong> &#8211; The structure to fill</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the size read &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_byte">
+<tt class="descname">read_byte</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_byte" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a byte from virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_byte_p">
+<tt class="descname">read_byte_p</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_byte_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a byte from physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_word">
+<tt class="descname">read_word</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a word from virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_word_p">
+<tt class="descname">read_word_p</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_word_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a word from physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_dword">
+<tt class="descname">read_dword</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_dword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a dword from virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_dword_p">
+<tt class="descname">read_dword_p</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_dword_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a dword from physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_qword">
+<tt class="descname">read_qword</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_qword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a qword from virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_qword_p">
+<tt class="descname">read_qword_p</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_qword_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a qword from physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_byte">
+<tt class="descname">write_byte</tt><big>(</big><em>addr</em>, <em>byte</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_byte" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a byte to virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_byte_p">
+<tt class="descname">write_byte_p</tt><big>(</big><em>addr</em>, <em>byte</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_byte_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a byte to physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_word">
+<tt class="descname">write_word</tt><big>(</big><em>addr</em>, <em>word</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a word to virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_word_p">
+<tt class="descname">write_word_p</tt><big>(</big><em>addr</em>, <em>word</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_word_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a word to physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_dword">
+<tt class="descname">write_dword</tt><big>(</big><em>addr</em>, <em>dword</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_dword" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a dword to virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_dword_p">
+<tt class="descname">write_dword_p</tt><big>(</big><em>addr</em>, <em>dword</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_dword_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a dword to physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_qword">
+<tt class="descname">write_qword</tt><big>(</big><em>addr</em>, <em>qword</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_qword" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a qword to virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_qword_p">
+<tt class="descname">write_qword_p</tt><big>(</big><em>addr</em>, <em>qword</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_qword_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a qword to physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_ptr">
+<tt class="descname">read_ptr</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_ptr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a pointer from virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_ptr_p">
+<tt class="descname">read_ptr_p</tt><big>(</big><em>addr</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_ptr_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a pointer from physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_ptr">
+<tt class="descname">write_ptr</tt><big>(</big><em>addr</em>, <em>value</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_ptr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a pointer to virtual memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_ptr_p">
+<tt class="descname">write_ptr_p</tt><big>(</big><em>addr</em>, <em>value</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_ptr_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a pointer to physical memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_msr">
+<tt class="descname">write_msr</tt><big>(</big><em>msr_id</em>, <em>value</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_msr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a Model Specific Register</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_msr">
+<tt class="descname">read_msr</tt><big>(</big><em>msr_id</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_msr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a Model Specific Register</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.virtual_to_physical">
+<tt class="descname">virtual_to_physical</tt><big>(</big><em>virtual</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.virtual_to_physical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the physical address of a virtual one</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_physical_memory">
+<tt class="descname">read_physical_memory</tt><big>(</big><em>addr</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_physical_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the physical memory at a given address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>addr</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; The Symbol to read from</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The size to read</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/functions.html#str" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">str</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_physical_memory">
+<tt class="descname">write_physical_memory</tt><big>(</big><em>addr</em>, <em>data</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_physical_memory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write data to a given physical address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>addr</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; The Symbol to write to</li>
+<li><strong>size</strong> (<em>str or ctypes.Structure</em>) &#8211; The Data to write</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the size written &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_processor_system_data">
+<tt class="descname">read_processor_system_data</tt><big>(</big><em>processor</em>, <em>type</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_processor_system_data" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Returns a <tt class="xref py py-class docutils literal"><span class="pre">DEBUG_PROCESSOR_IDENTIFICATION_X86</span></tt> if type is <tt class="xref py py-class docutils literal"><span class="pre">DEBUG_DATA_PROCESSOR_IDENTIFICATION</span></tt></div>
+<div class="line">else returns an <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></div>
+</div>
+<p>(see <tt class="xref py py-func docutils literal"><span class="pre">ReadProcessorSystemData()</span></tt> <a class="reference external" href="https://msdn.microsoft.com/en-us/library/windows/hardware/ff554326%28v=vs.85%29.aspx">https://msdn.microsoft.com/en-us/library/windows/hardware/ff554326%28v=vs.85%29.aspx</a>.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_bus_data">
+<tt class="descname">read_bus_data</tt><big>(</big><em>datatype</em>, <em>busnumber</em>, <em>slot</em>, <em>offset</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_bus_data" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Read on bus data, only current known use is to read on the PCI bus.</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">example\simple_pci_exploration.py</span></tt>)</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_bus_data">
+<tt class="descname">write_bus_data</tt><big>(</big><em>datatype</em>, <em>busnumber</em>, <em>slot</em>, <em>offset</em>, <em>data</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_bus_data" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Write on bus data, only current known use is to write on the PCI bus.</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">example\simple_pci_exploration.py</span></tt>)</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.read_io">
+<tt class="descname">read_io</tt><big>(</big><em>port</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.read_io" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Perform an IN operation</div>
+<div class="line">might be subject to some restrictions</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">README.md</span></tt> <tt class="file docutils literal"><span class="pre">do_in</span> <span class="pre">|</span> <span class="pre">do_out</span> <span class="pre">VS</span> <span class="pre">read_io</span> <span class="pre">|</span> <span class="pre">write_io</span></tt>)</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>port</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; port to read</li>
+<li><strong>size</strong> (<em>int - 1, 2 or 4</em>) &#8211; size to read</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the value read &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.write_io">
+<tt class="descname">write_io</tt><big>(</big><em>port</em>, <em>value</em>, <em>size=None</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.write_io" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Perform an OUT operation</div>
+<div class="line">might be subject to some restrictions</div>
+<div class="line">(see <tt class="file docutils literal"><span class="pre">README.md</span></tt> <tt class="file docutils literal"><span class="pre">do_in</span> <span class="pre">|</span> <span class="pre">do_out</span> <span class="pre">VS</span> <span class="pre">read_io</span> <span class="pre">|</span> <span class="pre">write_io</span></tt>)</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>port</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; port to write</li>
+<li><strong>size</strong> (<em>int - 1, 2 or 4</em>) &#8211; size to write</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the number of bytes written &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.kcall">
+<tt class="descname">kcall</tt><big>(</big><em>target</em>, <em>*args</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.kcall" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;require upgraded driver&gt;</div>
+<div class="line">Call target in kernel mode with given arguments.</div>
+<div class="line">KCall respect the calling convention but YOU must</div>
+<div class="line">pass the correct number of argument or the kernel</div>
+<div class="line">will likely crash.</div>
+<div class="line">(see <a class="reference internal" href="#dbginterface.LocalKernelDebuggerBase.map_page_to_userland" title="dbginterface.LocalKernelDebuggerBase.map_page_to_userland"><tt class="xref py py-func docutils literal"><span class="pre">map_page_to_userland()</span></tt></a>) for an example</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>target</strong> (<a class="reference internal" href="#Symbol" title="Symbol"><em>Symbol</em></a>) &#8211; the Symbol to call</li>
+<li><strong>args</strong> (<em>list of int</em>) &#8211; the arguments of the call</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.do_in">
+<tt class="descname">do_in</tt><big>(</big><em>port</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.do_in" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;require upgraded driver&gt;</div>
+<div class="line">Perform an IN operation</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>port</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; port to read</li>
+<li><strong>size</strong> (<em>int - 1, 2 or 4</em>) &#8211; size to read</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the value read &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.do_out">
+<tt class="descname">do_out</tt><big>(</big><em>port</em>, <em>value</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.do_out" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;require upgraded driver&gt;</div>
+<div class="line">Perform an OUT operation</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>port</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; port to write</li>
+<li><strong>size</strong> (<em>int - 1, 2 or 4</em>) &#8211; size to write</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the number of bytes written &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.alloc_memory">
+<tt class="descname">alloc_memory</tt><big>(</big><em>size=4096</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.alloc_memory" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;require upgraded driver&gt;</div>
+<div class="line">Allocate <strong>size</strong> of NonPaged kernel memory</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dbginterface.LocalKernelDebuggerBase.map_page_to_userland">
+<tt class="descname">map_page_to_userland</tt><big>(</big><em>virtual_addr</em>, <em>size</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebuggerBase.map_page_to_userland" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">&lt;require upgraded driver&gt;</div>
+<div class="line">Map <strong>size</strong> bytes of kernel memory <strong>virtual_addr</strong> in the current address space</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>virtual_addr</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; kernel virtual addr</li>
+<li><strong>size</strong> (<a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; size to map</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">address of the page in current process &#8211; <a class="reference external" href="https://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">int</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="dbginterface.LocalKernelDebugger">
+<tt class="descclassname">dbginterface.</tt><tt class="descname">LocalKernelDebugger</tt><big>(</big><em>quiet=True</em><big>)</big><a class="headerlink" href="#dbginterface.LocalKernelDebugger" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Check that all conditions to Local Kernel Debugging are met</div>
+<div class="line">and return a LKD (subclass of <a class="reference internal" href="#dbginterface.LocalKernelDebuggerBase" title="dbginterface.LocalKernelDebuggerBase"><tt class="xref py py-class docutils literal"><span class="pre">LocalKernelDebuggerBase</span></tt></a></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to LocalKernelDebugger&#8217;s documentation!</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/dbginterface.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to LocalKernelDebugger’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">LocalKernelDebugger 0.42 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2015, Samuel Chevet, Clement Rouault.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
