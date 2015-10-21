@@ -103,5 +103,5 @@ Problem is that in a 32bits kernel the kernel addresses are bit expended.
 
 `ntoskrnl` base in 32bits kernel would not be `0x8XXXXXXX` but `0xffffffff8XXXXXXX`.
 
-[EX_DIRECTORY]: https://github.com/sogeti-esec-lab/LKD/example
-[OUTPUT_DEMO]: https://github.com/sogeti-esec-lab/LKD/example/output_demo.py
+[EX_DIRECTORY]: https://github.com/sogeti-esec-lab/LKD/tree/master/example
+[OUTPUT_DEMO]: https://github.com/sogeti-esec-lab/LKD/blob/master/example/output_demo.py
