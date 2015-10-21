@@ -68,7 +68,7 @@ See the [example directory][EX_DIRECTORY].
     
 - `example\` Our demos code of the use and interest of LKD
 
-- `doc\` Sphinx documentation
+- `doc\` Sphinx documentation ([Available online][DOC_GEN])
     
 - `windows\`
 Side project with some windows helpers, some part of this are not directly used by LKD.  
@@ -105,3 +105,4 @@ Problem is that in a 32bits kernel the kernel addresses are bit expended.
 
 [EX_DIRECTORY]: https://github.com/sogeti-esec-lab/LKD/tree/master/example
 [OUTPUT_DEMO]: https://github.com/sogeti-esec-lab/LKD/blob/master/example/output_demo.py
+[DOC_GEN]: https://sogeti-esec-lab.github.io/LKD/dbginterface.html

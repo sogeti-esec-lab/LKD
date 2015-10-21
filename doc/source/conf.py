@@ -28,6 +28,13 @@ os.environ['SPHINX_BUILD'] = '1'
 
 sys.path.insert(0, os.path.abspath('../..'))
 
+from sphinx import version_info
+
+str_version = ".".join(str(x) for x in version_info[:3])
+if str_version >= "1.3.1":
+    html_theme = 'classic'
+else:
+    html_theme = 'default'
 
 def autodoc_skip_attribute(app, what, name, obj, skip, options):
     if hasattr(obj, "_do_not_generate_doc"):
@@ -137,7 +144,8 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'classic'
+
+#html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
