@@ -35,6 +35,8 @@ class IDebugClient(COMInterface):
         "EndSession": WINFUNCTYPE(HRESULT, c_ulong)(26, "EndSession"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556751%28v=vs.85%29.aspx
         "SetOutputCallbacks": ctypes.WINFUNCTYPE(HRESULT, c_void_p)(34, "SetOutputCallbacks"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff545475%28v=vs.85%29.aspx
+        "FlushCallbacks": ctypes.WINFUNCTYPE(HRESULT)(47, "FlushCallbacks"),
     }
 
 
@@ -134,6 +136,7 @@ class IDebugSymbols3(COMInterface):
     })
 
 
+# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550508%28v=vs.85%29.aspx
 class IDebugControl(COMInterface):
     _functions_ = {
         "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
@@ -141,9 +144,16 @@ class IDebugControl(COMInterface):
         "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
         "GetInterrupt": ctypes.WINFUNCTYPE(HRESULT)(3, "GetInterrupt"),
         "SetInterrupt": ctypes.WINFUNCTYPE(HRESULT, ULONG)(4, "SetInterrupt"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546675%28v=vs.85%29.aspx
         "GetExecutionStatus": ctypes.WINFUNCTYPE(HRESULT, PULONG)(49, "GetExecutionStatus"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556693%28v=vs.85%29.aspx
+        "SetExecutionStatus": ctypes.WINFUNCTYPE(HRESULT, ULONG)(50, "SetExecutionStatus"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff543208%28v=vs.85%29.aspx
         "Execute": ctypes.WINFUNCTYPE(HRESULT, ULONG, c_char_p, ULONG)(66, "Execute"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff537856%28v=vs.85%29.aspx
+        "AddBreakpoint": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PVOID)(72, "AddBreakpoint"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554487%28v=vs.85%29.aspx
+        "RemoveBreakpoint": ctypes.WINFUNCTYPE(HRESULT, PVOID)(73, "RemoveBreakpoint"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561229%28v=vs.85%29.aspx
         "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent")
     }
@@ -941,7 +951,7 @@ class LocalKernelDebuggerBase(object):
     def read_ptr(self, addr):
         """Read a pointer from virtual memory"""
         raise NotImplementedError("bitness dependent")
-        
+
     def read_ptr_p(self, addr):
         """Read a pointer from physical memory"""
         raise NotImplementedError("bitness dependent")
@@ -1366,21 +1376,91 @@ def LocalKernelDebugger(quiet=True):
             raise LocalKernelDebuggerError("Cannot perform LocalKernelDebugging from SysWow64 process (please launch from 64bits python)")
         return LocalKernelDebugger64(quiet)
     return LocalKernelDebugger32(quiet)
-    
+
 # # We are working on this part, we don't know if we will use it
 # # We don't know if it really works
 # # We keep that here for information purposes
 
-# class RemoteDebugger(LocalKernelDebugger32):
-#     def __init__(self):
-#         enable_privilege(SE_DEBUG_NAME, True)
-#         self._load_debug_dll()
-#         self.DebugClient = self._do_debug_create()
-# 
-#     def _do_kernel_attach(self, str):
-#         #self._setup_windbg_imposture()
-#         DEBUG_ATTACH_LOCAL_KERNEL = 1
-#         DEBUG_ATTACH_KERNEL_CONNECTION = 0x00000000
-#         res = self.DebugClient.AttachKernel(DEBUG_ATTACH_KERNEL_CONNECTION, str)
-#         if res:
-#             raise WinError(res)
+DEBUG_INTERRUPT_ACTIVE  = 0
+DEBUG_END_ACTIVE_DETACH = 0x00000002
+
+DEBUG_BREAKPOINT_CODE = 0
+DEBUG_BREAKPOINT_DATA = 1
+DEBUG_BREAKPOINT_TIME = 2
+
+
+# Breakpoint flags.
+# Go-only breakpoints are only active when
+# the engine is in unrestricted execution
+# mode.  They do not fire when the engine
+# is stepping.
+DEBUG_BREAKPOINT_GO_ONLY  =  0x00000001
+# A breakpoint is flagged as deferred as long as
+# its offset expression cannot be evaluated.
+# A deferred breakpoint is not active.
+DEBUG_BREAKPOINT_DEFERRED = 0x00000002
+DEBUG_BREAKPOINT_ENABLED  = 0x00000004
+# The adder-only flag does not affect breakpoint
+# operation.  It is just a marker to restrict
+# output and notifications for the breakpoint to
+# the client that added the breakpoint.  Breakpoint
+# callbacks for adder-only breaks will only be delivered
+# to the adding client.  The breakpoint can not
+# be enumerated and accessed by other clients.
+DEBUG_BREAKPOINT_ADDER_ONLY = 0x00000008
+# One-shot breakpoints automatically clear themselves
+# the first time they are hit.
+DEBUG_BREAKPOINT_ONE_SHOT = 0x00000010
+
+# Data breakpoint access types.
+# Different architectures support different
+# sets of these bits.
+DEBUG_BREAK_READ    = 0x00000001
+DEBUG_BREAK_WRITE   = 0x00000002
+DEBUG_BREAK_EXECUTE = 0x00000004
+DEBUG_BREAK_IO      = 0x00000008
+
+DEBUG_ANY_ID = 0xffffffff
+
+from breakpoint import WinBreakpoint
+
+class RemoteDebugger(LocalKernelDebugger32):
+    def __init__(self, connect_string):
+        self.quiet = False
+        self._load_debug_dll()
+        self.DebugClient = self._do_debug_create()
+        self._do_kernel_attach(connect_string)
+        self._ask_other_interface()
+        self._setup_symbols_options()
+        self.set_output_callbacks(self._standard_output_callback)
+        self.DebugControl.SetInterrupt(DEBUG_INTERRUPT_ACTIVE)
+        self._wait_local_kernel_connection()
+        self._load_modules_syms()
+        self.reload()
+
+    def _do_kernel_attach(self, str):
+        DEBUG_ATTACH_LOCAL_KERNEL = 1
+        DEBUG_ATTACH_KERNEL_CONNECTION = 0x00000000
+        res = self.DebugClient.AttachKernel(DEBUG_ATTACH_KERNEL_CONNECTION, str)
+        if res:
+            raise WinError(res)
+
+    def detach(self):
+        self.DebugClient.EndSession(DEBUG_END_ACTIVE_DETACH)
+
+    def get_execution_status(self):
+        res = ULONG()
+        self.DebugControl.GetExecutionStatus(ctypes.byref(res))
+        return res.value
+
+    def set_execution_status(self, status):
+        return self.DebugControl.SetExecutionStatus(status)
+
+    def add_breakpoint(self):
+        bp = WinBreakpoint(0, self)
+        self.DebugControl.AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, ctypes.byref(bp))
+        return bp
+
+    def cont(self):
+        return self.DebugControl.WaitForEvent(0, 0xffffffff)
+
