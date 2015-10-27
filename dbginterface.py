@@ -158,6 +158,64 @@ class IDebugControl(COMInterface):
         "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent")
     }
 
+# TEST DEBUG_VALUE #
+
+class _DEBUG_VALUE_UNION(ctypes.Union):
+        _fields_ = [
+        ("I8", UCHAR),
+        ("I16", USHORT),
+        ("I32", ULONG),
+        ("I64", ULONG64),
+        ("RawBytes", UCHAR * 24)
+    ]
+
+class _DEBUG_VALUE(ctypes.Structure):
+        VALUE_TRANSLATION_TABLE = {DEBUG_VALUE_INT8: "I8", DEBUG_VALUE_INT16: "I16",
+            DEBUG_VALUE_INT32: "I32", DEBUG_VALUE_INT64: "I64"}
+
+        _fields_ = [
+        ("Value", _DEBUG_VALUE_UNION),
+        ("TailOfRawBytes", ULONG),
+        ("Type", ULONG),
+    ]
+
+        def get_value(self):
+            if self.Type == 0:
+                raise ValueError("DEBUG_VALUE at DEBUG_VALUE_INVALID")
+            if self.Type not in self.VALUE_TRANSLATION_TABLE:
+                # TODO: full _DEBUG_VALUE_UNION and implem other DEBUG_VALUE_XXX
+                raise NotImplementedError("DEBUG_VALUE.Type == {0} (sorry)".format(self.Type))
+            return getattr(self.Value, self.VALUE_TRANSLATION_TABLE[self.Type])
+
+DEBUG_VALUE = _DEBUG_VALUE
+PDEBUG_VALUE = POINTER(_DEBUG_VALUE)
+
+
+# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550825%28v=vs.85%29.aspx
+class IDebugRegisters(COMInterface):
+    _functions_ = {
+        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
+        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
+        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547960%28v=vs.85%29.aspx
+        "GetNumberRegisters": ctypes.WINFUNCTYPE(HRESULT, PULONG)(3, "GetNumberRegisters"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546575%28v=vs.85%29.aspx
+        "GetDescription": ctypes.WINFUNCTYPE(HRESULT, ULONG, PVOID, ULONG, PULONG, PDEBUG_REGISTER_DESCRIPTION)(4, "GetDescription"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546881%28v=vs.85%29.aspx
+        "GetIndexByName": ctypes.WINFUNCTYPE(HRESULT, c_char_p, PULONG)(5, "GetIndexByName"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549476%28v=vs.85%29.aspx
+        "GetValue": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_VALUE)(6, "GetValue"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556881%28v=vs.85%29.aspx
+        "SetValue": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_VALUE)(7, "SetValue"),
+
+        # "GetValues": ctypes.WINFUNCTYPE(HRESULT)(8, "GetValues"),
+        # "SetValues": ctypes.WINFUNCTYPE(HRESULT)(9, "SetValues"),
+
+        "OutputRegisters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG)(10, "OutputRegisters"),
+    }
+
+
+
 
 class DummyIATEntry(ctypes.Structure):
     _fields_ = [
@@ -1424,6 +1482,43 @@ DEBUG_ANY_ID = 0xffffffff
 
 from breakpoint import WinBreakpoint
 
+# TODO keep the register_info list in the object
+class TargetRegisters(IDebugRegisters):
+    """This class suppose that the list of registers does not change for a given target"""
+
+    def get_number_registers(self):
+        res = ULONG()
+        self.GetNumberRegisters(ctypes.byref(res))
+        return res.value
+
+    def get_register_name(self, index):
+        name_size = ULONG()
+        self.GetDescription(index, None, 0, ctypes.byref(name_size), None)
+        bsize = name_size.value
+        buffer = (c_char * bsize)()
+        self.GetDescription(index, buffer, bsize, ctypes.byref(name_size), None)
+        return buffer[:name_size.value - 1]
+
+    def list_registers(self):
+        return [self.get_register_name(i) for i in range(self.get_number_registers())]
+
+    def get_register_value(self, index):
+        res = DEBUG_VALUE()
+        self.GetValue(index, ctypes.byref(res))
+        return res.get_value()
+
+    def get_register_value_by_name(self, name):
+        regs_name = self.list_registers()
+        if name.lower() not in regs_name:
+            raise ValueError("Unknown register <{0}>".format(name))
+        return self.get_register_value(regs_name.index(name.lower()))
+
+    __getitem__ = get_register_value_by_name
+
+    def output(self):
+        self.OutputRegisters(0, 0)
+
+
 class RemoteDebugger(LocalKernelDebugger32):
     def __init__(self, connect_string):
         self.quiet = False
@@ -1445,6 +1540,16 @@ class RemoteDebugger(LocalKernelDebugger32):
         if res:
             raise WinError(res)
 
+    def _ask_other_interface(self):
+        super(RemoteDebugger, self)._ask_other_interface()
+        DebugClient = self.DebugClient
+        self.DebugRegisters = TargetRegisters(0)
+
+        DebugClient.QueryInterface(IID_IDebugRegisters, ctypes.byref(self.DebugRegisters))
+        self.registers = self.DebugRegisters
+
+
+
     def detach(self):
         self.DebugClient.EndSession(DEBUG_END_ACTIVE_DETACH)
 
@@ -1463,4 +1568,12 @@ class RemoteDebugger(LocalKernelDebugger32):
 
     def cont(self):
         return self.DebugControl.WaitForEvent(0, 0xffffffff)
+
+    def get_register_index(self, name):
+        res = ULONG()
+        self.DebugRegisters.GetIndexByName(name, ctypes.byref(res))
+        return res.value
+
+
+
 

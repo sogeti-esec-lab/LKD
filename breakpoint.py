@@ -72,9 +72,16 @@ class WinBreakpoint(IDebugBreakpoint):
     def disable(self):
         self.RemoveFlags(DEBUG_BREAKPOINT_ENABLED)
 
+    # We don't use SetOffset because if the offset is set using
+    # this method, the command set by 'SetCommand' is never executed
     def set_offset(self, addr):
-        addr = self.dbg.resolve_symbol(addr)
-        return self.SetOffset(addr)
+        if isinstance(addr, str):
+            return self.set_offset_expression(addr)
+        hex_addr = hex(addr).strip("L")
+        return self.set_offset_expression(hex_addr)
+
+    def set_offset_expression(self, expr):
+        return self.SetOffsetExpression(expr)
 
     def set_command(self, cmd):
         return self.SetCommand(cmd)
@@ -86,7 +93,7 @@ class WinBreakpoint(IDebugBreakpoint):
         l = cmd_length.value
         buffer = (ctypes.c_char * l)()
         self.GetCommand(buffer, l, ctypes.byref(cmd_length))
-        return buffer[:cmd_length]
+        return buffer[:cmd_length.value - 1]
 
 
 

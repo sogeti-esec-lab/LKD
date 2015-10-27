@@ -8,6 +8,7 @@ IID_IDebugSymbols_raw = 0x8c31e98c, 0x983a, 0x48a5, 0x90, 0x16, 0x6f, 0xe5, 0xd6
 IID_IDebugSymbols2_raw = 0x3a707211, 0xafdd, 0x4495, 0xad, 0x4f, 0x56, 0xfe, 0xcd, 0xf8, 0x16, 0x3f
 IID_IDebugSymbols3_raw = 0xf02fbecc, 0x50ac, 0x4f36, 0x9a, 0xd9, 0xc9, 0x75, 0xe8, 0xf3, 0x2f, 0xf8
 IID_IDebugControl_raw = 0x5182e668, 0x105e, 0x416e, 0xad, 0x92, 0x24, 0xef, 0x80, 0x04, 0x24, 0xba
+IID_IDebugRegisters_raw = 0xce289126, 0x9e84, 0x45a7, 0x93, 0x7e, 0x67, 0xbb, 0x18, 0x69, 0x14, 0x93
 
 IID_IDebugClient = get_IID_from_raw(IID_IDebugClient_raw)
 IID_IDebugDataSpaces = get_IID_from_raw(IID_IDebugDataSpaces_raw)
@@ -16,7 +17,7 @@ IID_IDebugSymbols = get_IID_from_raw(IID_IDebugSymbols_raw)
 IID_IDebugSymbols2 = get_IID_from_raw(IID_IDebugSymbols2_raw)
 IID_IDebugSymbols3 = get_IID_from_raw(IID_IDebugSymbols3_raw)
 IID_IDebugControl = get_IID_from_raw(IID_IDebugControl_raw)
-
+IID_IDebugRegisters = get_IID_from_raw(IID_IDebugRegisters_raw)
 
 # defines related to IDebug interfaces
 
@@ -50,3 +51,17 @@ DEBUG_DATA_PROCESSOR_SPEED                      = 5
 UserMode = 1
 MmNonCached = 0
 NormalPagePriority = 16
+
+
+DEBUG_VALUE_INVALID      = 0
+DEBUG_VALUE_INT8         = 1
+DEBUG_VALUE_INT16        = 2
+DEBUG_VALUE_INT32        = 3
+DEBUG_VALUE_INT64        = 4
+DEBUG_VALUE_FLOAT32      = 5
+DEBUG_VALUE_FLOAT64      = 6
+DEBUG_VALUE_FLOAT80      = 7
+DEBUG_VALUE_FLOAT82      = 8
+DEBUG_VALUE_FLOAT128     = 9
+DEBUG_VALUE_VECTOR64     = 10
+DEBUG_VALUE_VECTOR128    = 11
