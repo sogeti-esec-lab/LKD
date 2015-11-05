@@ -1,4 +1,5 @@
 import ctypes
+from ctypes import byref
 
 from simple_com import COMInterface
 from windows.generated_def.winstructs import *
@@ -66,11 +67,38 @@ class WinBreakpoint(IDebugBreakpoint):
         self.dbg = debugger
         super(WinBreakpoint, self).__init__(comptr)
 
+    def get_id(self):
+        id = ULONG()
+        self.GetId(byref(id))
+        return id.value
+
+    def get_type(self):
+        typ = ULONG()
+        self.GetId(byref(typ))
+        return typ.value
+
+    id = property(get_id)
+
+    def add_flags(self, flags):
+        return self.AddFlags(flags)
+
+    def remove_flags(self, flags):
+        return self.RemoveFlags(flags)
+
+    def set_flags(self, flags):
+        return self.SetFlags(flags)
+
+
     def enable(self):
-        self.AddFlags(DEBUG_BREAKPOINT_ENABLED)
+        return self.add_flags(DEBUG_BREAKPOINT_ENABLED)
 
     def disable(self):
-        self.RemoveFlags(DEBUG_BREAKPOINT_ENABLED)
+        return self.remove_flags(DEBUG_BREAKPOINT_ENABLED)
+
+    def get_flags(self):
+        flags = ULONG()
+        self.GetFlags(byref(flags))
+        return flags.value
 
     # We don't use SetOffset because if the offset is set using
     # this method, the command set by 'SetCommand' is never executed
@@ -80,8 +108,20 @@ class WinBreakpoint(IDebugBreakpoint):
         hex_addr = hex(addr).strip("L")
         return self.set_offset_expression(hex_addr)
 
+    def get_offset(self):
+        offset = ULONG64()
+        self.GetOffset(byref(offset))
+        return self.dbg.trim_ulong64_to_address(offset.value)
+
     def set_offset_expression(self, expr):
         return self.SetOffsetExpression(expr)
+
+    def get_offset_expression(self):
+        expression_size = ULONG()
+        self.GetOffsetExpression(None, 0, byref(expression_size))
+        buffer = (ctypes.c_char * expression_size.value)()
+        self.GetOffsetExpression(buffer, expression_size, byref(expression_size))
+        return buffer[:expression_size.value].strip("\x00")
 
     def set_command(self, cmd):
         return self.SetCommand(cmd)
@@ -95,5 +135,24 @@ class WinBreakpoint(IDebugBreakpoint):
         self.GetCommand(buffer, l, ctypes.byref(cmd_length))
         return buffer[:cmd_length.value - 1]
 
+    def get_pass_count(self):
+        pass_count = ULONG()
+        self.GetPassCount(byref(pass_count))
+        return pass_count.value
 
+    def get_current_pass_count(self):
+        pass_count = ULONG()
+        self.GetCurrentPassCount(byref(pass_count))
+        return pass_count.value
 
+    def set_pass_count(self, pass_count):
+        return self.SetPassCount(pass_count)
+
+    def get_data_parameters(self):
+        size = ULONG()
+        access_type = ULONG()
+        self.GetDataParameters(byref(size), byref(access_type))
+        return size.value, access_type.value
+
+    def set_data_parameters(self, size, access_type):
+        return self.SetDataParameters(size, access_type)

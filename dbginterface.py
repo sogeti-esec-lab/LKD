@@ -144,6 +144,9 @@ class IDebugControl(COMInterface):
         "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
         "GetInterrupt": ctypes.WINFUNCTYPE(HRESULT)(3, "GetInterrupt"),
         "SetInterrupt": ctypes.WINFUNCTYPE(HRESULT, ULONG)(4, "SetInterrupt"),
+        "GetStackTrace": ctypes.WINFUNCTYPE(HRESULT, ULONG64, ULONG64, ULONG64, PDEBUG_STACK_FRAME, ULONG, PULONG)(31, "GetStackTrace"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff553252%28v=vs.85%29.aspx
+        "OutputStackTrace": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_STACK_FRAME, ULONG, ULONG)(33, "OutputStackTrace"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546675%28v=vs.85%29.aspx
         "GetExecutionStatus": ctypes.WINFUNCTYPE(HRESULT, PULONG)(49, "GetExecutionStatus"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556693%28v=vs.85%29.aspx
@@ -155,7 +158,9 @@ class IDebugControl(COMInterface):
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554487%28v=vs.85%29.aspx
         "RemoveBreakpoint": ctypes.WINFUNCTYPE(HRESULT, PVOID)(73, "RemoveBreakpoint"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561229%28v=vs.85%29.aspx
-        "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent")
+        "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546982%28v=vs.85%29.aspx
+        "GetLastEventInformation" : WINFUNCTYPE(HRESULT, PULONG, PULONG, PULONG, PVOID, ULONG, PULONG, PVOID, ULONG, PULONG)(94, "WaitForEvent")
     }
 
 # TEST DEBUG_VALUE #
@@ -186,6 +191,16 @@ class _DEBUG_VALUE(ctypes.Structure):
                 # TODO: full _DEBUG_VALUE_UNION and implem other DEBUG_VALUE_XXX
                 raise NotImplementedError("DEBUG_VALUE.Type == {0} (sorry)".format(self.Type))
             return getattr(self.Value, self.VALUE_TRANSLATION_TABLE[self.Type])
+
+        def set_value(self, new_value):
+            if self.Type == 0:
+                raise ValueError("DEBUG_VALUE at DEBUG_VALUE_INVALID")
+            if self.Type not in self.VALUE_TRANSLATION_TABLE:
+                # TODO: full _DEBUG_VALUE_UNION and implem other DEBUG_VALUE_XXX
+                raise NotImplementedError("DEBUG_VALUE.Type == {0} (sorry)".format(self.Type))
+            return setattr(self.Value, self.VALUE_TRANSLATION_TABLE[self.Type], new_value)
+
+
 
 DEBUG_VALUE = _DEBUG_VALUE
 PDEBUG_VALUE = POINTER(_DEBUG_VALUE)
@@ -338,9 +353,9 @@ class LocalKernelDebuggerBase(object):
         self.DebugSymbols = IDebugSymbols3(0)
         self.DebugControl = IDebugControl(0)
 
-        DebugClient.QueryInterface(IID_IDebugDataSpaces2, ctypes.byref(self.DebugDataSpaces))
-        DebugClient.QueryInterface(IID_IDebugSymbols3, ctypes.byref(self.DebugSymbols))
-        DebugClient.QueryInterface(IID_IDebugControl, ctypes.byref(self.DebugControl))
+        DebugClient.QueryInterface(IID_IDebugDataSpaces2, byref(self.DebugDataSpaces))
+        DebugClient.QueryInterface(IID_IDebugSymbols3, byref(self.DebugSymbols))
+        DebugClient.QueryInterface(IID_IDebugControl, byref(self.DebugControl))
 
     def _wait_local_kernel_connection(self):
         self.DebugControl.WaitForEvent(0, 0xffffffff)
@@ -423,11 +438,11 @@ class LocalKernelDebuggerBase(object):
         """| Return **symbol** if it's an :class:`int` else resolve it using :func:`get_symbol_offset`
            | Used by functions to either accept an :class:`int` or a windbg :class:`Symbol`"""
         if isinstance(symbol, (int, long)):
-            return symbol
+            return self.expand_address_to_ulong64(symbol)
         x = self.get_symbol_offset(symbol)
         if x is None:
             raise ValueError("Unknow symbol <{0}>".format(symbol))
-        return x
+        return self.expand_address_to_ulong64(x)
 
     def resolve_type(self, imodule, itype):
         """| Return **imodule** and **itype**  if they are an :class:`int` else
@@ -807,7 +822,7 @@ class LocalKernelDebuggerBase(object):
         :rtype: int"""
         SymbolLocation = ctypes.c_uint64(0)
         try:
-            self.DebugSymbols.GetOffsetByName(name, ctypes.byref(SymbolLocation))
+            self.DebugSymbols.GetOffsetByName(name, byref(SymbolLocation))
         except WindowsError:
             return None
         return self.trim_ulong64_to_address(SymbolLocation.value)
@@ -886,7 +901,7 @@ class LocalKernelDebuggerBase(object):
         try:
             # ctypes structure
             size = ctypes.sizeof(data)
-            buffer = ctypes.byref(data)
+            buffer = byref(data)
         except TypeError:
             # buffer
             size = len(data)
@@ -1069,7 +1084,7 @@ class LocalKernelDebuggerBase(object):
         try:
             # ctypes structure
             size = ctypes.sizeof(data)
-            buffer = ctypes.byref(data)
+            buffer = byref(data)
         except TypeError:
             # buffer
             size = len(data)
@@ -1488,15 +1503,15 @@ class TargetRegisters(IDebugRegisters):
 
     def get_number_registers(self):
         res = ULONG()
-        self.GetNumberRegisters(ctypes.byref(res))
+        self.GetNumberRegisters(byref(res))
         return res.value
 
     def get_register_name(self, index):
         name_size = ULONG()
-        self.GetDescription(index, None, 0, ctypes.byref(name_size), None)
+        self.GetDescription(index, None, 0, byref(name_size), None)
         bsize = name_size.value
         buffer = (c_char * bsize)()
-        self.GetDescription(index, buffer, bsize, ctypes.byref(name_size), None)
+        self.GetDescription(index, buffer, bsize, byref(name_size), None)
         return buffer[:name_size.value - 1]
 
     def list_registers(self):
@@ -1504,7 +1519,7 @@ class TargetRegisters(IDebugRegisters):
 
     def get_register_value(self, index):
         res = DEBUG_VALUE()
-        self.GetValue(index, ctypes.byref(res))
+        self.GetValue(index, byref(res))
         return res.get_value()
 
     def get_register_value_by_name(self, name):
@@ -1515,9 +1530,56 @@ class TargetRegisters(IDebugRegisters):
 
     __getitem__ = get_register_value_by_name
 
+
+    def set_register_value(self, index, value):
+        res = DEBUG_VALUE()
+        self.GetValue(index, byref(res))
+        res.set_value(value)
+        return self.SetValue(index, byref(res))
+
+    def set_register_value_by_name(self, name, value):
+        regs_name = self.list_registers()
+        if name.lower() not in regs_name:
+            raise ValueError("Unknown register <{0}>".format(name))
+        return self.set_register_value(regs_name.index(name.lower()), value)
+
+    __setitem__ = set_register_value_by_name
+
     def output(self):
         self.OutputRegisters(0, 0)
-
+        
+LAST_EVENT_VALUES = {
+ 0x00000001: ("DEBUG_EVENT_BREAKPOINT", DEBUG_LAST_EVENT_INFO_BREAKPOINT),
+ 0x00000002: ("DEBUG_EVENT_EXCEPTION", DEBUG_LAST_EVENT_INFO_EXCEPTION),
+ 0x00000004: ("DEBUG_EVENT_CREATE_THREAD", None),
+ 0x00000008: ("DEBUG_EVENT_EXIT_THREAD", DEBUG_LAST_EVENT_INFO_EXIT_THREAD),
+ 0x00000010: ("DEBUG_EVENT_CREATE_PROCESS", None),
+ 0x00000020: ("DEBUG_EVENT_EXIT_PROCESS", DEBUG_LAST_EVENT_INFO_EXIT_PROCESS),
+ 0x00000040: ("DEBUG_EVENT_LOAD_MODULE", DEBUG_LAST_EVENT_INFO_LOAD_MODULE),
+ 0x00000080: ("DEBUG_EVENT_UNLOAD_MODULE", DEBUG_LAST_EVENT_INFO_UNLOAD_MODULE),
+ 0x00000100: ("DEBUG_EVENT_SYSTEM_ERROR", DEBUG_LAST_EVENT_INFO_SYSTEM_ERROR),
+ 0x00000200: ("DEBUG_EVENT_SESSION_STATUS", None), 
+ 0x00000400: ("DEBUG_EVENT_CHANGE_DEBUGGEE_STATE", None),
+ 0x00000800: ("DEBUG_EVENT_CHANGE_ENGINE_STATE", None),
+ 0x00001000: ("DEBUG_EVENT_CHANGE_SYMBOL_STATE", None),
+}
+        
+        
+class LastEvent(object):
+    def __init__(self, type, process_id, thread_id, raw_extra_information, raw_description):
+        self.type = type
+        self.process_id = process_id
+        self.thread_id = thread_id
+        
+        if type not in LAST_EVENT_VALUES:
+            raise ValueError("Unknow LastEvent if type {0}".format(hex(type)))
+        self.event_name, extra_info_type = LAST_EVENT_VALUES[type]       
+        self.extra_information = extra_info_type.from_buffer_copy(raw_extra_information)
+        self.description = raw_description[:].strip("\x00")
+        
+    def __repr__(self):
+        return """<LastEvent {0} ({1})>""".format(self.event_name, self.description)
+        
 
 class RemoteDebugger(LocalKernelDebugger32):
     def __init__(self, connect_string):
@@ -1532,6 +1594,7 @@ class RemoteDebugger(LocalKernelDebugger32):
         self._wait_local_kernel_connection()
         self._load_modules_syms()
         self.reload()
+        self.breakpoints = {}
 
     def _do_kernel_attach(self, str):
         DEBUG_ATTACH_LOCAL_KERNEL = 1
@@ -1545,17 +1608,18 @@ class RemoteDebugger(LocalKernelDebugger32):
         DebugClient = self.DebugClient
         self.DebugRegisters = TargetRegisters(0)
 
-        DebugClient.QueryInterface(IID_IDebugRegisters, ctypes.byref(self.DebugRegisters))
+        DebugClient.QueryInterface(IID_IDebugRegisters, byref(self.DebugRegisters))
         self.registers = self.DebugRegisters
 
-
+    def print_stack(self, number_frame=0x1fff, print_option=0):
+        return self.DebugControl.OutputStackTrace(0, None, 0x1fff , print_option)
 
     def detach(self):
         self.DebugClient.EndSession(DEBUG_END_ACTIVE_DETACH)
 
     def get_execution_status(self):
         res = ULONG()
-        self.DebugControl.GetExecutionStatus(ctypes.byref(res))
+        self.DebugControl.GetExecutionStatus(byref(res))
         return res.value
 
     def set_execution_status(self, status):
@@ -1563,17 +1627,73 @@ class RemoteDebugger(LocalKernelDebugger32):
 
     def add_breakpoint(self):
         bp = WinBreakpoint(0, self)
-        self.DebugControl.AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, ctypes.byref(bp))
+        self.DebugControl.AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, byref(bp))
+        self.breakpoints[bp.id] = bp
         return bp
+        
+    def remove_breakpoint(self, bp):
+        id = bp.id
+        self.DebugControl.RemoveBreakpoint(bp)
+        del self.breakpoints[id]
 
     def cont(self):
         return self.DebugControl.WaitForEvent(0, 0xffffffff)
 
     def get_register_index(self, name):
         res = ULONG()
-        self.DebugRegisters.GetIndexByName(name, ctypes.byref(res))
+        self.DebugRegisters.GetIndexByName(name, byref(res))
         return res.value
 
+    def get_stack_frames(self):
+        for i in range(1, 10):
+            array_size = i * 100
+            res = ULONG()
+            array = (DEBUG_STACK_FRAME * (array_size))()
 
+            self.DebugControl.GetStackTrace(0, 0, 0, array, array_size, byref(res))
+            if res.value < array_size:
+                return array[0: res.value]
 
+    def get_last_event_information(self):
+        extra_information_used = ULONG()
+        description_used = ULONG()
+        type = ULONG()
+        ProcessId = ULONG()
+        ThreadId = ULONG()
 
+        self.DebugControl.GetLastEventInformation(byref(type), byref(ProcessId), byref(ThreadId), None, 0, byref(extra_information_used), None, 0, byref(description_used))
+        extra_information = (ctypes.c_byte * extra_information_used.value)()
+        description = (ctypes.c_char * description_used.value)()
+        self.DebugControl.GetLastEventInformation(byref(type), byref(ProcessId), byref(ThreadId), extra_information, extra_information_used.value, byref(extra_information_used), description, description_used.value, byref(description_used))
+        return LastEvent(type.value, ProcessId.value, ThreadId.value, extra_information, description)
+        
+    last_event = property(get_last_event_information)
+    
+            
+    def read_string(self, addr):
+        """Todo handle string at end of mmap memory that does not stop with a \x00"""
+        base = addr
+        res = []
+        for i in itertools.count():
+            x = self.read_virtual_memory(base + (i * 0x100), 0x100)
+            if "\x00" in x:
+                res.append(x.split("\x00", 1)[0])
+                break
+            res.append(x)
+        return "".join(res)
+        
+        
+    def read_wstring(self, addr):
+        base = addr
+        res = []
+        for i in itertools.count():
+            x = self.read_virtual_memory(base + (i * 0x100), 0x100)
+            utf16_chars = ["".join(c) for c in zip(*[iter(x)] * 2)]
+            if "\x00\x00" in utf16_chars:
+                res.extend(utf16_chars[:utf16_chars.index("\x00\x00")])
+                break
+            res.extend(x)
+        try:
+            return "".join(res).decode('utf16')
+        except ValueError:
+            return "".join(res)
