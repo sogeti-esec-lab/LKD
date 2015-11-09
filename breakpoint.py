@@ -63,7 +63,10 @@ class IDebugBreakpoint(COMInterface):
 
 
 class WinBreakpoint(IDebugBreakpoint):
-    def __init__(self, comptr, debugger):
+    def __init__(self, comptr=0, debugger=None):
+        if comptr and debugger is None:
+            raise ValueError("Cannot create a breakpoint with non-zero comptr and no debugger")
+        self.is_bind_to_debugger = debugger is not None
         self.dbg = debugger
         super(WinBreakpoint, self).__init__(comptr)
 

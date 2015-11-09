@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 from os.path import realpath, dirname
 import struct
@@ -17,9 +18,21 @@ from windows.generated_def.winstructs import *
 from dbgdef import *
 from dbgtype import DbgEngType
 
+
+
 # Based on the trick used in PRAW
 # http://stackoverflow.com/a/22023805
 IS_SPHINX_BUILD = bool(os.environ.get('SPHINX_BUILD', '0'))
+
+
+class IDebugEventCallbacks(COMInterface):
+    _functions_ = {
+        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
+        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
+        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
+    }
+
+PDEBUG_EVENT_CALLBACKS = POINTER(IDebugEventCallbacks)
 
 # The COM Interfaces we need for the LocalKernelDebugger
 class IDebugClient(COMInterface):
@@ -35,6 +48,10 @@ class IDebugClient(COMInterface):
         "EndSession": WINFUNCTYPE(HRESULT, c_ulong)(26, "EndSession"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556751%28v=vs.85%29.aspx
         "SetOutputCallbacks": ctypes.WINFUNCTYPE(HRESULT, c_void_p)(34, "SetOutputCallbacks"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546601%28v=vs.85%29.aspx
+        "GetEventCallbacks": ctypes.WINFUNCTYPE(HRESULT, POINTER(PVOID))(45, "GetEventCallbacks"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556671%28v=vs.85%29.aspx
+        "SetEventCallbacks": ctypes.WINFUNCTYPE(HRESULT, PVOID)(46, "SetEventCallbacks"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff545475%28v=vs.85%29.aspx
         "FlushCallbacks": ctypes.WINFUNCTYPE(HRESULT)(47, "FlushCallbacks"),
     }
@@ -228,6 +245,7 @@ class IDebugRegisters(COMInterface):
 
         "OutputRegisters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG)(10, "OutputRegisters"),
     }
+
 
 
 
@@ -482,7 +500,7 @@ class LocalKernelDebuggerBase(object):
 
     def _standard_output_callback(self, x, y, msg):
         if not self.quiet:
-            print msg,
+            print (msg, end='')
         return 0
 
     def _init_string_output_callback(self):
@@ -499,14 +517,13 @@ class LocalKernelDebuggerBase(object):
            | (see :file:`example\\output_demo.py`)
         """
         self._output_callback = callback
-        my_idebugoutput_vtable = IDebugOutputCallbacksVtable.create_vtable(Output=callback)
-        my_debugoutput_obj = ctypes.pointer(my_idebugoutput_vtable)
-        res = self.DebugClient.SetOutputCallbacks(ctypes.addressof(my_debugoutput_obj))
+        my_idebugoutput = IDebugOutputCallbacksVtable(Output=callback)
+        res = self.DebugClient.SetOutputCallbacks(my_idebugoutput)
         # Need to keep reference to these object else our output callback will be
         # garbage collected leading to crash
         # Update self.keep_alive AFTER the call to SetOutputCallbacks because
         # SetOutputCallbacks may call methods of the old my_debugoutput_obj
-        self.keep_alive = [my_idebugoutput_vtable, my_debugoutput_obj]
+        self.keep_alive = [my_idebugoutput]
         return res
 
     def get_modules(self):
@@ -1547,7 +1564,7 @@ class TargetRegisters(IDebugRegisters):
 
     def output(self):
         self.OutputRegisters(0, 0)
-        
+
 LAST_EVENT_VALUES = {
  0x00000001: ("DEBUG_EVENT_BREAKPOINT", DEBUG_LAST_EVENT_INFO_BREAKPOINT),
  0x00000002: ("DEBUG_EVENT_EXCEPTION", DEBUG_LAST_EVENT_INFO_EXCEPTION),
@@ -1558,28 +1575,41 @@ LAST_EVENT_VALUES = {
  0x00000040: ("DEBUG_EVENT_LOAD_MODULE", DEBUG_LAST_EVENT_INFO_LOAD_MODULE),
  0x00000080: ("DEBUG_EVENT_UNLOAD_MODULE", DEBUG_LAST_EVENT_INFO_UNLOAD_MODULE),
  0x00000100: ("DEBUG_EVENT_SYSTEM_ERROR", DEBUG_LAST_EVENT_INFO_SYSTEM_ERROR),
- 0x00000200: ("DEBUG_EVENT_SESSION_STATUS", None), 
+ 0x00000200: ("DEBUG_EVENT_SESSION_STATUS", None),
  0x00000400: ("DEBUG_EVENT_CHANGE_DEBUGGEE_STATE", None),
  0x00000800: ("DEBUG_EVENT_CHANGE_ENGINE_STATE", None),
  0x00001000: ("DEBUG_EVENT_CHANGE_SYMBOL_STATE", None),
 }
-        
-        
+
+
 class LastEvent(object):
     def __init__(self, type, process_id, thread_id, raw_extra_information, raw_description):
         self.type = type
         self.process_id = process_id
         self.thread_id = thread_id
-        
+
         if type not in LAST_EVENT_VALUES:
             raise ValueError("Unknow LastEvent if type {0}".format(hex(type)))
-        self.event_name, extra_info_type = LAST_EVENT_VALUES[type]       
+        self.event_name, extra_info_type = LAST_EVENT_VALUES[type]
         self.extra_information = extra_info_type.from_buffer_copy(raw_extra_information)
         self.description = raw_description[:].strip("\x00")
-        
+
     def __repr__(self):
         return """<LastEvent {0} ({1})>""".format(self.event_name, self.description)
-        
+
+class StackFrame(DEBUG_STACK_FRAME):
+    def suce(self):
+        print("SUCE")
+
+    def __repr__(self):
+        return "<STACK FRAME>"
+
+
+# >>> v[1].InstructionOffset == v[0].ReturnOffset
+# True
+# >>> v[2].InstructionOffset == v[1].ReturnOffset
+# True
+
 
 class RemoteDebugger(LocalKernelDebugger32):
     def __init__(self, connect_string):
@@ -1611,7 +1641,7 @@ class RemoteDebugger(LocalKernelDebugger32):
         DebugClient.QueryInterface(IID_IDebugRegisters, byref(self.DebugRegisters))
         self.registers = self.DebugRegisters
 
-    def print_stack(self, number_frame=0x1fff, print_option=0):
+    def print_stack(self, number_frame=0x1fff, print_option=0x1fff):
         return self.DebugControl.OutputStackTrace(0, None, 0x1fff , print_option)
 
     def detach(self):
@@ -1625,12 +1655,18 @@ class RemoteDebugger(LocalKernelDebugger32):
     def set_execution_status(self, status):
         return self.DebugControl.SetExecutionStatus(status)
 
-    def add_breakpoint(self):
-        bp = WinBreakpoint(0, self)
+    def add_breakpoint(self, bp=None):
+        if bp is None:
+            bp = WinBreakpoint()
+            bp.debugger = self
+        if bp.is_bind_to_debugger:
+            raise ValueError("Cannot bind a debugger to multiple debugger")
+        bp.debugger = self
+        bp.is_bind_to_debugger = True
         self.DebugControl.AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, byref(bp))
         self.breakpoints[bp.id] = bp
         return bp
-        
+
     def remove_breakpoint(self, bp):
         id = bp.id
         self.DebugControl.RemoveBreakpoint(bp)
@@ -1644,15 +1680,17 @@ class RemoteDebugger(LocalKernelDebugger32):
         self.DebugRegisters.GetIndexByName(name, byref(res))
         return res.value
 
-    def get_stack_frames(self):
+    def get_stack_trace(self):
         for i in range(1, 10):
             array_size = i * 100
             res = ULONG()
-            array = (DEBUG_STACK_FRAME * (array_size))()
+            array = (StackFrame * (array_size))()
 
             self.DebugControl.GetStackTrace(0, 0, 0, array, array_size, byref(res))
             if res.value < array_size:
                 return array[0: res.value]
+
+    backtrace = property(get_stack_trace)
 
     def get_last_event_information(self):
         extra_information_used = ULONG()
@@ -1666,10 +1704,11 @@ class RemoteDebugger(LocalKernelDebugger32):
         description = (ctypes.c_char * description_used.value)()
         self.DebugControl.GetLastEventInformation(byref(type), byref(ProcessId), byref(ThreadId), extra_information, extra_information_used.value, byref(extra_information_used), description, description_used.value, byref(description_used))
         return LastEvent(type.value, ProcessId.value, ThreadId.value, extra_information, description)
-        
+
     last_event = property(get_last_event_information)
-    
-            
+
+
+
     def read_string(self, addr):
         """Todo handle string at end of mmap memory that does not stop with a \x00"""
         base = addr
@@ -1681,8 +1720,8 @@ class RemoteDebugger(LocalKernelDebugger32):
                 break
             res.append(x)
         return "".join(res)
-        
-        
+
+
     def read_wstring(self, addr):
         base = addr
         res = []

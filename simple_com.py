@@ -2,6 +2,7 @@ import struct
 import ctypes
 import functools
 from ctypes.wintypes import HRESULT
+from windows.generated_def.winstructs import *
 
 # Simple Abstraction to call COM interface in Python (Python -> COM)
 IID_PACK = "<I", "<H", "<H", "<B", "<B", "<B", "<B", "<B", "<B", "<B", "<B"
@@ -25,17 +26,6 @@ class COMInterface(ctypes.c_void_p):
 
 
 # Simple Implem to create COM Interface in Python (COM -> Python)
-def BasicQueryInterface(self, *args):
-    return 1
-
-
-def BasicAddRef(self, *args):
-    return 1
-
-
-def BasicRelease(self, *args):
-    return 0
-
 
 def create_c_callable(func, types, keepalive=[]):
     func_type = ctypes.WINFUNCTYPE(*types)
@@ -48,33 +38,71 @@ def create_c_callable(func, types, keepalive=[]):
 
 class ComVtable(object):
     # Name, types, DefaultImplem
-    _funcs_ = [("QueryInterface", [ctypes.HRESULT, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p], BasicQueryInterface),
-               ("AddRef", [ctypes.HRESULT, ctypes.c_void_p], BasicAddRef),
-               ("Release", [ctypes.HRESULT, ctypes.c_void_p], BasicRelease)
+    _funcs_ = [("QueryInterface", [ctypes.HRESULT, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]),
+               ("AddRef", [ctypes.HRESULT, ctypes.c_void_p]),
+               ("Release", [ctypes.HRESULT, ctypes.c_void_p])
                ]
 
-    def __init__(self):
-        raise NotImplementedError("Nop: use create_vtable")
+    def __init__(self, **implem_overwrite):
+        self.implems = []
+        self.vtable = self._create_vtable(**implem_overwrite)
+        self.vtable_pointer = ctypes.pointer(self.vtable)
+        self._as_parameter_ = ctypes.addressof(self.vtable_pointer)
 
-    @classmethod
-    def create_vtable(cls, **implem_overwrite):
-        vtables_names = [x[0] for x in cls._funcs_]
+    def _create_vtable(self, **implem_overwrite):
+        vtables_names = [x[0] for x in self._funcs_]
         non_expected_args = [func_name for func_name in implem_overwrite if func_name not in vtables_names]
         if non_expected_args:
             raise ValueError("Non expected function : {0}".format(non_expected_args))
 
-        implems = []
-        for name, types, func_implem in cls._funcs_:
-            func_implem = implem_overwrite.get(name, func_implem)
+        for name, types in self._funcs_:
+            func_implem = implem_overwrite.get(name)
             if func_implem is None:
-                raise ValueError("Missing implementation for function <{0}>".format(name))
-            implems.append(create_c_callable(func_implem, types))
+                if hasattr(self, name):
+                    func_implem = getattr(self, name)
+                else:
+                    raise ValueError("Missing implementation for function <{0}>".format(name))
+
+            if isinstance(func_implem, (int, long)):
+                self.implems.append(func_implem)
+            else:
+                self.implems.append(create_c_callable(func_implem, types))
 
         class Vtable(ctypes.Structure):
             _fields_ = [(name, ctypes.c_void_p) for name in vtables_names]
+        return Vtable(*self.implems)
 
-        return Vtable(*implems)
+    def QueryInterface(self, *args):
+        return 1
+
+    def AddRef(self, *args):
+        return 1
+
+    def Release(self, *args):
+        return 0
 
 
 class IDebugOutputCallbacksVtable(ComVtable):
-    _funcs_ = ComVtable._funcs_ + [("Output", [ctypes.HRESULT, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_char_p], None)]
+    _funcs_ = ComVtable._funcs_ + [("Output", [ctypes.HRESULT, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_char_p])]
+
+
+class IDebugEventCallbacks(ComVtable):
+    _funcs_ = ComVtable._funcs_ + [
+                    ("GetInterestMask", [ctypes.HRESULT, PVOID, PULONG]),
+                    ("Breakpoint", [ctypes.HRESULT, PVOID,PVOID]),
+                    ("Exception", [ctypes.HRESULT, PVOID, PVOID, ULONG]),
+                    ("CreateThread", [ctypes.HRESULT, PVOID, ULONG64, ULONG64, ULONG64]),
+                    ("ExitThread", [ctypes.HRESULT, PVOID, ULONG]),
+                    ("CreateProcess", [ctypes.HRESULT, PVOID, ULONG64, ULONG64, ULONG64,
+                                       ULONG, c_char_p, c_char_p, ULONG, ULONG,
+                                       ULONG64, ULONG64, ULONG64]),
+                    ("ExitProcess", [ctypes.HRESULT, PVOID, ULONG]),
+                    ("LoadModule", [ctypes.HRESULT, ULONG64, ULONG64, ULONG, c_char_p, c_char_p, ULONG, ULONG]),
+                    ("UnloadModule", [ctypes.HRESULT, PVOID, c_char_p, ULONG64]),
+                    ("SystemError", [ctypes.HRESULT, PVOID, ULONG, ULONG]),
+                    ("SessionStatus", [ctypes.HRESULT, PVOID, ULONG]),
+                    ("ChangeDebuggeeState", [ctypes.HRESULT, PVOID, ULONG, ULONG64]),
+                    ("ChangeEngineState", [ctypes.HRESULT, PVOID, ULONG, ULONG64]),
+                    ("ChangeSymbolState", [ctypes.HRESULT, PVOID, ULONG, ULONG64]),
+                    ]
+
