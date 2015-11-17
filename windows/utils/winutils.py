@@ -30,6 +30,7 @@ def get_remote_func_addr(target, dll_name, func_name):
 
 
 def is_wow_64(hProcess):
+    import ipdb;ipdb.set_trace()
     try:
         fnIsWow64Process = get_func_addr("kernel32.dll", "IsWow64Process")
     except winproxy.Kernel32Error:
@@ -118,7 +119,7 @@ def check_is_elevated():
 
 def check_debug():
     """Check that kernel is in debug mode
-       beware of NOUMEX (https://msdn.microsoft.com/en-us/library/windows/hardware/ff556253(v=vs.85).aspx#_______noumex______)"""
+       beware if NOUMEX (https://msdn.microsoft.com/en-us/library/windows/hardware/ff556253(v=vs.85).aspx#_______noumex______)"""
     hkresult = HKEY()
     cbsize = DWORD(1024)
     bufferres = (c_char * cbsize.value)()
@@ -190,10 +191,14 @@ class VirtualProtected(object):
 class DisableWow64FsRedirection(object):
     """A context manager that disable the Wow64 Fs Redirection"""
     def __enter__(self):
+        if windows.current_process.bitness == 64:
+            return self
         self.OldValue = PVOID()
         winproxy.Wow64DisableWow64FsRedirection(ctypes.byref(self.OldValue))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if windows.current_process.bitness == 64:
+            return False
         winproxy.Wow64RevertWow64FsRedirection(self.OldValue)
         return False

@@ -26,30 +26,41 @@ def transform_ctypes_fields(struct, replacement):
     return [(name, replacement.get(name, type)) for name, type in struct._fields_]
 
 
+def get_structure_transformer_for_target(target):
+    current_bitness = windows.current_process.bitness
+    if target is None:
+        ctypes_structure_transformer = lambda x:x
+        create_structure_at = lambda structcls, addr: structcls.from_address(addr)
+        return ctypes_structure_transformer, create_structure_at
+
+    if target.bitness == 32 and current_bitness == 64:
+        ctypes_structure_transformer = rctypes.transform_type_to_remote32bits
+    elif target.bitness == 64 and current_bitness == 32:
+        ctypes_structure_transformer = rctypes.transform_type_to_remote64bits
+    elif target.bitness == current_bitness:
+        ctypes_structure_transformer = rctypes.transform_type_to_remote
+    else:
+        raise NotImplementedError("Parsing {0} PE from {1} Process".format(targetedbitness, proc_bitness))
+
+    def create_structure_at(structcls, addr):
+        if isinstance(structcls, windows.remotectypes.RemoteStructureUnion):
+            return structcls(addr, target)
+        return ctypes_structure_transformer(structcls)(addr, target)
+    return ctypes_structure_transformer, create_structure_at
+
+
 def PEFile(baseaddr, target=None):
-    # TODO: 32 with target 32
-    #       64 with target 64
-    # For now you can do it by injecting a remote python..
     proc_bitness = windows.current_process.bitness
     if target is None:
         targetedbitness = proc_bitness
+        addressof = ctypes.addressof
     else:
         targetedbitness = target.bitness
+        addressof = lambda x: x._base_addr
 
-    if targetedbitness == 32 and proc_bitness == 64:
-        raise NotImplementedError("Parse 32bits PE with 64bits current_process")
-    elif targetedbitness == 64 and proc_bitness == 32:
-        ctypes_structure_transformer = rctypes.transform_type_to_remote64bits
+    transformers = get_structure_transformer_for_target(target)
+    ctypes_structure_transformer, create_structure_at = transformers
 
-        def create_structure_at(structcls, addr):
-                return rctypes.transform_type_to_remote64bits(structcls)(addr, target)
-    elif targetedbitness == proc_bitness:  # Does not handle remote of same bitness..
-        ctypes_structure_transformer = lambda x: x
-
-        def create_structure_at(structcls, addr):
-            return structcls.from_address(addr)
-    else:
-        raise NotImplementedError("Parsing {0} PE from {1} Process".format(targetedbitness, proc_bitness))
 
     if targetedbitness == 32:
         IMAGE_ORDINAL_FLAG = IMAGE_ORDINAL_FLAG32
@@ -65,14 +76,14 @@ def PEFile(baseaddr, target=None):
             return "<DWORD {0} (RVA to '{1}')>".format(self.value, hex(self.addr))
 
     class StringRVa(RVA):
-        if proc_bitness == 32 and targetedbitness == 64:
-            @property
-            def str(self):
-                return rctypes.Remote_c_char_p64(self.addr, target=target).value
-        else:
+        if target is None:
             @property
             def str(self):
                 return ctypes.c_char_p(self.addr).value.decode()
+        else:
+            @property
+            def str(self):
+                return create_structure_at(ctypes.c_char_p, self.addr).value.decode()
 
         def __repr__(self):
             return "<DWORD {0} (String RVA to '{1}')>".format(self.value, self.str)
@@ -161,7 +172,13 @@ def PEFile(baseaddr, target=None):
         class PESection(ctypes_structure_transformer(IMAGE_SECTION_HEADER)):
             @utils.fixedpropety
             def name(self):
-                return ctypes.c_char_p(ctypes.addressof(self.Name)).value
+                return "".join(chr(c) for c in self.Name[:]).strip("\x00")
+                #import pdb;pdb.set_trace()
+                #if target is None:
+                #    name = ctypes.c_char_p(name_address).value
+                #else:
+                #    name = create_structure_at(ctypes.c_char_p, name_address).value.decode()
+                #return ctypes.c_char_p(ctypes.addressof(self.Name)).value
 
             def __repr__(self):
                 return "<PESection \"{0}\">".format(self.name)
@@ -170,7 +187,7 @@ def PEFile(baseaddr, target=None):
         def sections(self):
             nt_header = self.get_NT_HEADER()
             nb_section = nt_header.FileHeader.NumberOfSections
-            base_section = ctypes.addressof(nt_header) + ctypes.sizeof(nt_header)
+            base_section = addressof(nt_header) + ctypes.sizeof(nt_header)
             sections_array = create_structure_at(self.PESection * nb_section, base_section)
             return list(sections_array)
 
@@ -218,10 +235,10 @@ def PEFile(baseaddr, target=None):
                     else:
                         import_by_name = create_structure_at(IMPORT_BY_NAME, baseaddr + int_entry.AddressOfData)
                         name_address = baseaddr + int_entry.AddressOfData + type(import_by_name).Name.offset
-                        if proc_bitness == 32 and targetedbitness == 64:
-                            name = rctypes.Remote_c_char_p64(name_address, target=target).value
-                        else:
+                        if target is None:
                             name = ctypes.c_char_p(name_address).value
+                        else:
+                            name = create_structure_at(ctypes.c_char_p, name_address).value.decode()
                         res.append((import_by_name.Hint, name))
                     int_addr += ctypes.sizeof(type(int_entry))
                     int_entry = create_structure_at(THUNK_DATA, int_addr)
