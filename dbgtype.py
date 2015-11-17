@@ -1,12 +1,8 @@
 # # Experimental code # #
-
-# Idea: make 2 type
-# One for field (with field name / bitfield / parentclass / etc)
-# One for the type above (fieldname.type)
-# That have info about array size and co
-
+import itertools
 import struct
 from windows.generated_def.winstructs import *
+
 
 class DbgEngTypeBase(object):
     def __init__(self, module, typeid, kdbg):
@@ -43,6 +39,7 @@ class DbgEngTypeBase(object):
     def __call__(self, addr):
         return DbgEngtypeMapping(self, addr)
 
+
 class DbgEngType(DbgEngTypeBase):
     @property
     def name(self):
@@ -77,6 +74,7 @@ class DbgEngType(DbgEngTypeBase):
     def __call__(self, addr):
         return get_mapped_type(self, addr)
 
+
 class DbgEngField(DbgEngTypeBase):
     name = DbgEngTypeBase.raw_name
 
@@ -90,15 +88,29 @@ class DbgEngField(DbgEngTypeBase):
         return self.SymGetTypeInfo(TI_GET_OFFSET)
 
     @property
-    def bitoff(self):
+    def bitoffset(self):
         return self.SymGetTypeInfo(TI_GET_BITPOSITION)
 
+    @property
+    def bitsize(self):
+        return self.SymGetTypeInfo(TI_GET_LENGTH)
+
+    @property
+    def is_bitfield(self):
+        try:
+            self.bitoffset
+            return True
+        except WindowsError:
+            return False
+
     def __repr__(self):
+        if self.is_bitfield:
+            bits = "bits" if self.bitsize > 1 else "bit"
+            return '<Field <{0}.{1}> at offset <{2}> (Pos {3}, {4} {bits})>'.format(self.parent.name, self.raw_name, hex(self.offset), self.bitoffset, self.bitsize, bits=bits)
         return '<Field <{0}.{1}> at offset <{2}> of type <{3}>>'.format(self.parent.name, self.raw_name, hex(self.offset), self.type.name)
 
 
 def get_mapped_type(type, addr):
-
     if type.is_array:
             return DbgEngtypeMappingPtr(type, addr)
 
@@ -122,37 +134,101 @@ class DbgEngtypeMapping(object):
 
     def __getattr__(self, name):
         if name not in self.type_field_dict:
-            raise AttributeError
-
+            raise AttributeError(name)
         field = self.type_field_dict[name]
         addr = self.addr + field.offset
 
-        # TODO: bitfield
+        # Works only for list of same elements as initial structure
+        # Fails for nt!_EPROCESS ThreadListHead
+        if field.type.name == "_LIST_ENTRY":
+            return Mapped_LIST_ENTRY(list_entry_field, addr)
 
+        if field.is_bitfield:
+            x = get_mapped_type(field.type, addr)
+            bitoff = field.bitoffset
+            mask = (2 ** field.bitsize) - 1
+            return (x & (mask << bitoff)) >> bitoff
         return get_mapped_type(field.type, addr)
+
+    def __dir__(self):
+        l = ["addr", "type", "type_field_dict", "kdbg"]
+        return l + self.type_field_dict.keys()
 
     def __repr__(self):
         return "<Mapped {0} on addr {1}>".format(self.type.name, hex(self.addr))
 
-        
+class Mapped_LIST_ENTRY(DbgEngtypeMapping):
+    def __init__(self, field, addr):
+        super(Mapped_LIST_ENTRY, self).__init__(field.type, addr)
+        self.list_entry_field = field
+
+    def next(self):
+        parent = self.list_entry_field.parent
+        offset = self.list_entry_field.offset
+        return parent(self.Flink[0].addr - offset)
+
+    def prev(self):
+        parent = self.list_entry_field.parent
+        offset = self.list_entry_field.offset
+        return parent(self.Blink[0].addr - offset)
+
+    def current(self):
+        parent = self.list_entry_field.parent
+        offset = self.list_entry_field.offset
+        return parent(self.addr - offset)
+
+    def all(self):
+        begin_addr = self.addr
+        res = [self.current()]
+        first_entry = res[0].addr
+        v = self
+        while True:
+            x = v.next()
+            if x.addr == first_entry:
+                return res
+            res.append(x)
+            v = getattr(x, self.list_entry_field.name)
+
+    def __repr__(self):
+        field = self.list_entry_field
+        return "<_LIST_ENTRY {0}.{1} at {2}>".format(field.parent.name, field.name, hex(id(self)))
+
+
 class DbgEngtypeMappingPtr(object):
     def __init__(self, type, addr):
+        if type.is_array:
+            self.addr = addr
+        else:
+            self.addr = type.kdbg.read_ptr(addr)
+
         self.type = type
-        self.addr = addr
         self.kdbg = type.kdbg
 
         if not self.type.is_array and not self.type.is_pointer:
             raise ValueError('DbgEngtypeMappingPtr on non ptr type')
 
-    def __getitem__(self, n):
-        if self.type.is_array:
-            addr = self.addr + self.type.size * n
-        else:
-            addr = self.type.kdbg.read_ptr(self.addr)
-            addr += self.type.size * n
+    def __repr__(self):
+        return "<DbgEngTypePtr to {0} at {1}>".format(self.type.name, hex(id(self)))
 
+    def __getitem__(self, n):
+        # Todo: slice
+        if isinstance(n, slice):
+            return [self._get_one_item(i) for i in  range(*n.indices(n.stop))]
+        return self._get_one_item(n)
+
+    def _get_one_item(self, n):
         target_t = self.type.type
+        addr = self.addr + target_t.size * n
         return get_mapped_type(target_t, addr)
+
+    def as_str(self):
+        res = []
+        for i in itertools.count():
+            x = self._get_one_item(i)
+            if not x:
+                return "".join(res)
+            res.append(chr(x))
+        raise Exception("Unreachable code")
 
 
 # Example
