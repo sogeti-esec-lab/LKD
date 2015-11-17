@@ -23,8 +23,6 @@ is_64_bits = windows.current_process.bitness == 64
 test_32bit_only = unittest.skipIf(not is_32_bits, "Test for 32bits Kernel only")
 test_64bit_only = unittest.skipIf(not is_64_bits, "Test for 64bits Kernel only")
 
-def get_kl
-
 class RequireSymbol(object):
     def __init__(self, *args):
         self.required_symbols = args

@@ -22,7 +22,7 @@ if windows.system.bitness != 32:
 
 def hook_ntcreatefile(kdbg, ignore_jump_space_check=False):
     """Hook NtCreateFile, the hook write the filename to a shared memory page"""
-    nt_create_file = kdbg.resolve_symbol("nt!NtCreateFile")
+    nt_create_file = kdbg.get_symbol_offset("nt!NtCreateFile")
     if not ignore_jump_space_check:
         # Check that function begin with mov edi, edi for the hook short jump
         if kdbg.read_word(nt_create_file) != 0xff8b:  # mov edi, edi
