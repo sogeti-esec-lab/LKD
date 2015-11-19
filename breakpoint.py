@@ -7,7 +7,6 @@ from windows.generated_def.winstructs import *
 DEBUG_BREAKPOINT_DEFERRED = 0x00000002
 DEBUG_BREAKPOINT_ENABLED  = 0x00000004
 
-
 # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549812%28v=vs.85%29.aspx
 class IDebugBreakpoint(COMInterface):
     _functions_ = {
@@ -68,6 +67,7 @@ class WinBreakpoint(IDebugBreakpoint):
             raise ValueError("Cannot create a breakpoint with non-zero comptr and no debugger")
         self.is_bind_to_debugger = debugger is not None
         self.dbg = debugger
+        self.deleted = False
         super(WinBreakpoint, self).__init__(comptr)
 
     def get_id(self):
@@ -159,3 +159,6 @@ class WinBreakpoint(IDebugBreakpoint):
 
     def set_data_parameters(self, size, access_type):
         return self.SetDataParameters(size, access_type)
+
+    def delete(self):
+        return self.dbg.remove_breakpoint(self)

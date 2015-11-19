@@ -174,14 +174,62 @@ class LastEvent(object):
     def __repr__(self):
         return """<LastEvent {0} ({1})>""".format(self.event_name, self.description)
 
-class StackFrame(DEBUG_STACK_FRAME):
-    def suce(self):
-        print("SUCE")
+
+class BaseStackFrame(DEBUG_STACK_FRAME):
+    """A subclass asigned to one debugger should be created using
+       assigned_to_debugger
+    """
+    # The subclasses assigned will have a dbg variable not None
+    dbg = None
+
+    @classmethod
+    def assigned_to_debugger(cls, the_dbg):
+        class StackFrame(cls):
+            dbg = the_dbg
+        return StackFrame
+
+    @property
+    def instruction_offset(self):
+        return self.dbg.trim_ulong64_to_address(self.InstructionOffset)
+
+    @property
+    def return_offset(self):
+        return self.dbg.trim_ulong64_to_address(self.ReturnOffset)
+
+    @property
+    def frame_offset(self):
+        return self.dbg.trim_ulong64_to_address(self.FrameOffset)
+
+    @property
+    def stack_offset(self):
+        return self.dbg.trim_ulong64_to_address(self.StackOffset)
+
+    @property
+    def func_table_entry(self):
+        raise NotImplementedError("TODO")
+
+    @property
+    def params(self):
+        return [self.dbg.trim_ulong64_to_address(x) for x in self.Params]
+
+    @property
+    def virtual(self):
+        return self.Virtual
+
+    @property
+    def frame_number(self):
+        return self.FrameNumber
 
     def __repr__(self):
-        return "<STACK FRAME>"
+        sym, disp = self.dbg.get_symbol(self.instruction_offset)
+        addr = hex(self.instruction_offset).strip("L")
+        if sym is None:
+            return "<StackFrame {0}>".format(addr)
+        return "<StackFrame {0} {1}+{2}>".format(addr, sym, hex(disp).strip("L"))
 
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550550%28v=vs.85%29.aspx        
+
+
+# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550550%28v=vs.85%29.aspx
 class DefaultEventCallback(IDebugEventCallbacks):
     def __init__(self, dbg, **implem):
         super(DefaultEventCallback, self).__init__(**implem)
@@ -208,6 +256,7 @@ class DefaultEventCallback(IDebugEventCallbacks):
         return self._dispatch_to_breakpoint(bp)
 
     def Exception(self, *args):
+        import pdb;pdb.set_trace()
         raise NotImplementedError("Exception")
 
     CreateThread = 0
@@ -287,11 +336,10 @@ class BaseRemoteDebugger(BaseKernelDebugger):
 
     def add_breakpoint(self, bp=None):
         if bp is None:
-            bp = WinBreakpoint()
-            bp.debugger = self
+            bp = WinBreakpoint(debugger=self)
         if bp.is_bind_to_debugger:
             raise ValueError("Cannot bind a debugger to multiple debugger")
-        bp.debugger = self
+        bp.dbg = self
         bp.is_bind_to_debugger = True
         self.DebugControl.AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, byref(bp))
         self.breakpoints[bp.id] = bp
@@ -300,7 +348,9 @@ class BaseRemoteDebugger(BaseKernelDebugger):
     def remove_breakpoint(self, bp):
         id = bp.id
         self.DebugControl.RemoveBreakpoint(bp)
+        self.breakpoints[id].deleted = True
         del self.breakpoints[id]
+        return True
 
     def cont(self, flag=None):
         if flag is not None:
@@ -310,7 +360,7 @@ class BaseRemoteDebugger(BaseKernelDebugger):
     go =  lambda self: self.cont(flag=DEBUG_STATUS_GO)
     step =  lambda self: self.cont(flag=DEBUG_STATUS_STEP_INTO)
     step_over =  lambda self: self.cont(flag=DEBUG_STATUS_STEP_OVER)
-    
+
     def get_register_index(self, name):
         res = ULONG()
         self.DebugRegisters.GetIndexByName(name, byref(res))
@@ -320,10 +370,12 @@ class BaseRemoteDebugger(BaseKernelDebugger):
         for i in range(1, 10):
             array_size = i * 100
             res = ULONG()
-            array = (StackFrame * (array_size))()
+            array = (BaseStackFrame.assigned_to_debugger(self) * (array_size))()
 
             self.DebugControl.GetStackTrace(0, 0, 0, array, array_size, byref(res))
             if res.value < array_size:
+                #for i in range(res.value):
+                    # Assign the debugger to each one
                 return array[0: res.value]
 
     backtrace = property(get_stack_trace)

@@ -1,0 +1,17 @@
+TODO
+
+* Embed extension DLL
+* Remote Kernel Debugging
+* Complete Type interface
+* Use LiveKD driver for read-only kernel access ?
+
+TO TRY
+
+* IDT hooks helper
+* Explore windows pagination
+
+
+TODO REMOTE:
+* StackFrame
+* Disassemble
+* Ctrl+C
