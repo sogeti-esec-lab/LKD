@@ -160,7 +160,10 @@ class IDebugControl(COMInterface):
         "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
         "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
         "GetInterrupt": ctypes.WINFUNCTYPE(HRESULT)(3, "GetInterrupt"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556722%28v=vs.85%29.aspx
         "SetInterrupt": ctypes.WINFUNCTYPE(HRESULT, ULONG)(4, "SetInterrupt"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff541948%28v=vs.85%29.aspx
+        "Disassemble": ctypes.WINFUNCTYPE(HRESULT, ULONG64, ULONG, PVOID, ULONG, PULONG, PULONG64)(26, "Disassemble"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff548425%28v=vs.85%29.aspx
         "GetStackTrace": ctypes.WINFUNCTYPE(HRESULT, ULONG64, ULONG64, ULONG64, PDEBUG_STACK_FRAME, ULONG, PULONG)(31, "GetStackTrace"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff553252%28v=vs.85%29.aspx
@@ -177,6 +180,18 @@ class IDebugControl(COMInterface):
         "AddBreakpoint": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PVOID)(72, "AddBreakpoint"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554487%28v=vs.85%29.aspx
         "RemoveBreakpoint": ctypes.WINFUNCTYPE(HRESULT, PVOID)(73, "RemoveBreakpoint"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547899(v=vs.85).aspx
+        "GetNumberEventFilters": ctypes.WINFUNCTYPE(HRESULT, PULONG, PULONG, PULONG)(81, "GetNumberEventFilters"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546618(v=vs.85).aspx
+        "GetEventFilterText": ctypes.WINFUNCTYPE(HRESULT, ULONG, PVOID, ULONG, PULONG)(82, "GetEventFilterText"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff548398(v=vs.85).aspx
+        "GetSpecificFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PDEBUG_SPECIFIC_FILTER_PARAMETERS)(85, "GetSpecificFilterParameters"),
+
+        "SetSpecificFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PDEBUG_SPECIFIC_FILTER_PARAMETERS)(86, "SetSpecificFilterParameters"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546650(v=vs.85).aspx
+        "GetExceptionFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, PULONG, ULONG, PDEBUG_EXCEPTION_FILTER_PARAMETERS)(89, "GetExceptionFilterParameters"),
+        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556683(v=vs.85).aspx  
+        "SetExceptionFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_EXCEPTION_FILTER_PARAMETERS)(90, "SetExceptionFilterParameters"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561229%28v=vs.85%29.aspx
         "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent"),
         # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546982%28v=vs.85%29.aspx
@@ -239,10 +254,7 @@ class BaseKernelDebugger(object):
         DebugClient.QueryInterface(IID_IDebugControl, byref(self.DebugControl))
 
     def _setup_symbols_options(self):
-        try:
-            symbol_path = os.environ['_NT_SYMBOL_PATH']
-        except KeyError:
-            symbol_path = self.DEFAULT_SYMBOL_PATH
+        symbol_path = os.environ.get('_NT_SYMBOL_PATH', self.DEFAULT_SYMBOL_PATH)
         self.DebugSymbols.SetSymbolPath(symbol_path)
         self.DebugSymbols.SetSymbolOption(self.SYMBOL_OPT)
 
@@ -357,7 +369,24 @@ class BaseKernelDebugger(object):
             return self._output_string
         return None
 
+    def disas_one(self, addr):
+        size = 1000
+        buffer = (ctypes.c_char * size)()
+        res_size = ULONG()
+        end = ULONG64()
+        self.DebugControl.Disassemble(addr, 0, buffer, size, byref(res_size), byref(end))
+        return (buffer[:res_size.value].strip("\n\x00"), end.value)
 
+    def disassemble(self, addr, nb_instr):
+        res = []
+        for i in range(nb_instr):
+            x, addr = self.disas_one(addr)
+            res.append(x)
+        return res
+
+    def print_disas(self, addr, nb_instr):
+        for i in self.disassemble(addr, nb_instr):
+            print(i)
 
     def _standard_output_callback(self, x, y, msg):
         if not self.quiet:
@@ -620,7 +649,7 @@ class BaseKernelDebugger(object):
         return struct.unpack("<Q", raw_data)[0]
 
     def write_byte(self, addr, byte):
-        """Read a byte to virtual memory"""
+        """write a byte to virtual memory"""
         return self.write_virtual_memory(addr, struct.pack("<B", byte))
 
     def write_byte_p(self, addr, byte):

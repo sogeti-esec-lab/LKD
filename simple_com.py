@@ -30,14 +30,14 @@ class COMInterface(ctypes.c_void_p):
 def create_c_callable(func, types, keepalive=[]):
     func_type = ctypes.WINFUNCTYPE(*types)
     c_callable = func_type(func)
-    # Dirty, but other methods require native code execution
+    # Dirty, but the other method require native code execution
     c_callback_addr = ctypes.c_ulong.from_address(id(c_callable._objects['0']) + 3 * ctypes.sizeof(ctypes.c_void_p)).value
     keepalive.append(c_callable)
     return c_callback_addr
 
 
 class ComVtable(object):
-    # Name, types, DefaultImplem
+    # Name, types
     _funcs_ = [("QueryInterface", [ctypes.HRESULT, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]),
                ("AddRef", [ctypes.HRESULT, ctypes.c_void_p]),
                ("Release", [ctypes.HRESULT, ctypes.c_void_p])

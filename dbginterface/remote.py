@@ -236,7 +236,7 @@ class DefaultEventCallback(IDebugEventCallbacks):
         self.debugger = dbg
 
     def GetInterestMask(self, selfcom, mask):
-        mask.contents.value = DEBUG_EVENT_BREAKPOINT + DEBUG_EVENT_EXCEPTION
+        mask.contents.value = DEBUG_EVENT_BREAKPOINT + DEBUG_EVENT_EXCEPTION + DEBUG_EVENT_CREATE_PROCESS + DEBUG_EVENT_LOAD_MODULE
         return 0
 
     def _get_breakpoint_from_com_ptr(self, bpcom):
@@ -256,12 +256,18 @@ class DefaultEventCallback(IDebugEventCallbacks):
         return self._dispatch_to_breakpoint(bp)
 
     def Exception(self, *args):
-        import pdb;pdb.set_trace()
-        raise NotImplementedError("Exception")
+        print("Exception")
+        return DEBUG_STATUS_BREAK
 
     CreateThread = 0
     ExitThread = 0
-    CreateProcess = 0
+    #CreateProcess = 0
+
+    def CreateProcess(self, *args):
+        print("CreateProcess")
+        import pdb;pdb.set_trace()
+        return 0
+
     ExitProcess = 0
     LoadModule = 0
     UnloadModule = 0
@@ -408,9 +414,73 @@ class BaseRemoteDebugger(BaseKernelDebugger):
         return self.get_type("nt", "_EPROCESS")(self.trim_ulong64_to_address(v))
 
     def current_peb(self):
+        # TODO: TYPE
         res = ULONG64()
         self.DebugSystemObjects.GetCurrentProcessPeb(byref(res))
         return res.value
+
+
+    # Filters stuff :)
+
+    def get_event_filter_text(self, i):
+        size = 1000
+        buffer = (c_char * size)()
+        textsize = ULONG()
+        self.DebugControl.GetEventFilterText(i, buffer, size, byref(textsize))
+        return buffer[:textsize.value]
+
+    def get_specific_filter_parameters(self, start, count=1):
+        if count == 1:
+            res_val = DEBUG_SPECIFIC_FILTER_PARAMETERS()
+            res = byref(res_val)
+            ret = lambda : res_val
+        else:
+            res = (DEBUG_SPECIFIC_FILTER_PARAMETERS * count)()
+            ret = lambda : res[:]
+
+        self.DebugControl.GetSpecificFilterParameters(start, count, res)
+        return ret()
+
+    def get_exception_filter_parameters(self, start, count=1):
+        if count == 1:
+            res_val = DEBUG_EXCEPTION_FILTER_PARAMETERS()
+            res = byref(res_val)
+            ret = lambda : res_val
+        else:
+            res = (DEBUG_EXCEPTION_FILTER_PARAMETERS * count)()
+            ret = lambda : res[:]
+
+        self.DebugControl.GetExceptionFilterParameters(count, None, start, res)
+        return ret()
+
+    def set_exception_filter_parameters(self, i, value):
+        return self.DebugControl.SetExceptionFilterParameters(i, byref(value))
+
+    def set_exception_filter_parameters(self, i, value):
+        return self.DebugControl.SetExceptionFilterParameters(i, byref(value))
+
+    def get_number_event_filters(self):
+        specific_event = ULONG()
+        specific_execpt = ULONG()
+        arbitrary_except = ULONG()
+        self.DebugControl.GetNumberEventFilters(byref(specific_event), byref(specific_execpt), byref(arbitrary_except))
+        return specific_event.value, specific_execpt.value, arbitrary_except.value
+
+    def set_specific_filter_parameters(self, start, params, count=None):
+        if count is None:
+            if isinstance(params, ctypes.Array):
+                count = params._length_
+            else:
+                count = 1
+        return self.DebugControl.SetSpecificFilterParameters(start, count, byref(params))
+
+    def set_exception_filter_parameters(self, params, count=None):
+        if count is None:
+            if isinstance(params, ctypes.Array):
+                count = params._length_
+            else:
+                count = 1
+        return self.DebugControl.SetExceptionFilterParameters(count, byref(params))
 
 
 

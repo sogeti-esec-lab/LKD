@@ -1,9 +1,12 @@
 TODO
 
-* Embed extension DLL
+* Embed extension DLL ?
 * Remote Kernel Debugging
 * Complete Type interface
 * Use LiveKD driver for read-only kernel access ?
+* Raise exception if symbol is not found
+* IEventCallback.Exception: use real argument not *args
+
 
 TO TRY
 
@@ -14,4 +17,6 @@ TO TRY
 TODO REMOTE:
 * StackFrame
 * Disassemble
-* Ctrl+C
+
+Cleaning:
+* the debugger attribute should be 'dbg' for all object that embed it
