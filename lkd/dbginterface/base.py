@@ -7,196 +7,57 @@ import itertools
 import functools
 import ctypes
 from ctypes import byref, WINFUNCTYPE, HRESULT, WinError
-#
-from simple_com import COMInterface, IDebugOutputCallbacksVtable
 
 import windows
-#import windows.hooks
 import windows.winproxy as winproxy
 from windows.generated_def.winstructs import *
-from dbgdef import *
-
-from dbgtype import DbgEngType
+from lkd.dbgdef import *
+from lkd.dbgcom import *
+from lkd.dbgtype import DbgEngType
+import lkd.dbgfuncs
 
 # Based on the trick used in PRAW
 # http://stackoverflow.com/a/22023805
 IS_SPHINX_BUILD = bool(os.environ.get('SPHINX_BUILD', '0'))
 
 
-class IDebugEventCallbacks(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-    }
+cast_to_char_p = lambda buff: ctypes.cast(byref(buff), ctypes.c_char_p)
+# DBG function
 
-PDEBUG_EVENT_CALLBACKS = POINTER(IDebugEventCallbacks)
-
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff549827%28v=vs.85%29.aspx
-class IDebugClient(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff538145%28v=vs.85%29.aspx
-        "AttachKernel": ctypes.WINFUNCTYPE(HRESULT, ULONG, c_char_p)(3, "AttachKernel"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff541851%28v=vs.85%29.aspx
-        "DetachProcesses": WINFUNCTYPE(HRESULT)(25, "DetachProcesses"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff543004%28v=vs.85%29.aspx
-        "EndSession": WINFUNCTYPE(HRESULT, c_ulong)(26, "EndSession"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556751%28v=vs.85%29.aspx
-        "SetOutputCallbacks": ctypes.WINFUNCTYPE(HRESULT, c_void_p)(34, "SetOutputCallbacks"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546601%28v=vs.85%29.aspx
-        "GetEventCallbacks": ctypes.WINFUNCTYPE(HRESULT, POINTER(PVOID))(45, "GetEventCallbacks"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556671%28v=vs.85%29.aspx
-        "SetEventCallbacks": ctypes.WINFUNCTYPE(HRESULT, PVOID)(46, "SetEventCallbacks"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff545475%28v=vs.85%29.aspx
-        "FlushCallbacks": ctypes.WINFUNCTYPE(HRESULT)(47, "FlushCallbacks"),
-    }
+class DbgEngProxy(windows.winproxy.ApiProxy):
+    APIDLL = "dbgeng.dll"
+    default_error_check = staticmethod(windows.winproxy.kernel32_zero_check)
 
 
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550528%28v=vs.85%29.aspx
-class IDebugDataSpaces(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554359%28v=vs.85%29.aspx
-        "ReadVirtual": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG)(3, "ReadVirtual"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561468%28v=vs.85%29.aspx
-        "WriteVirtual": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG)(4, "WriteVirtual"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554310%28v=vs.85%29.aspx
-        "ReadPhysical": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG)(10, "ReadPhysical"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561432%28v=vs.85%29.aspx
-        "WritePhysical": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG)(11, "WritePhysical"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff553573%28v=vs.85%29.aspx
-        "ReadIo": WINFUNCTYPE(HRESULT, ULONG, ULONG, ULONG, ULONG64, PVOID, ULONG, PULONG)(14, "ReadIo"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561402%28v=vs.85%29.aspx
-        "WriteIo": WINFUNCTYPE(HRESULT, ULONG, ULONG, ULONG, ULONG64, PVOID, ULONG, PULONG)(15, "WriteIo"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554289%28v=vs.85%29.aspx
-        "ReadMsr": WINFUNCTYPE(HRESULT, ULONG, PULONG64)(16, "ReadMsr"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561424%28v=vs.85%29.aspx
-        "WriteMsr": WINFUNCTYPE(HRESULT, ULONG, ULONG64)(17, "WriteMsr"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff553519%28v=vs.85%29.aspx
-        "ReadBusData": WINFUNCTYPE(HRESULT, ULONG, ULONG, ULONG, ULONG, PVOID, ULONG, PULONG)(18, "ReadBusData"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561371%28v=vs.85%29.aspx
-        "WriteBusData": WINFUNCTYPE(HRESULT, ULONG, ULONG, ULONG, ULONG, PVOID, ULONG, PULONG)(19, "WriteBusData"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554326%28v=vs.85%29.aspx
-        "ReadProcessorSystemData": WINFUNCTYPE(HRESULT, ULONG, ULONG, PVOID, ULONG, PULONG)(22, "ReadProcessorSystemData"),
-    }
+class DbgHelpProxy(windows.winproxy.ApiProxy):
+    APIDLL = "dbghelp.dll"
+    default_error_check = staticmethod(windows.winproxy.kernel32_zero_check)
 
 
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550531%28v=vs.85%29.aspx
-class IDebugDataSpaces2(COMInterface):
-    _functions_ = dict(IDebugDataSpaces._functions_)
-    _functions_.update({
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff560335%28v=vs.85%29.aspx
-        "VirtualToPhysical": WINFUNCTYPE(HRESULT, ULONG64, PULONG64)(23, "VirtualToPhysical"),
-    })
+@DbgEngProxy("DebugCreate", deffunc_module=lkd.dbgfuncs)
+def DebugCreate(InterfaceId, Interface):
+    return DebugCreate.ctypes_function(InterfaceId, Interface)
 
 
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550856%28v=vs.85%29.aspx
-class IDebugSymbols(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556798%28v=vs.85%29.aspx
-        "SetSymbolOption": WINFUNCTYPE(HRESULT, ctypes.c_ulong)(6, "SetSymbolOption"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547183%28v=vs.85%29.aspx
-        "GetNameByOffset": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG, PULONG64)(7, "GetNameByOffset"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff548035%28v=vs.85%29.aspx
-        "GetOffsetByName": WINFUNCTYPE(HRESULT, c_char_p, POINTER(ctypes.c_uint64))(8, "GetOffsetByName"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547927%28v=vs.85%29.aspx
-        "GetNumberModules": WINFUNCTYPE(HRESULT, LPDWORD, LPDWORD)(12, "GetNumberModules"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547080%28v=vs.85%29.aspx
-        "GetModuleByIndex": WINFUNCTYPE(HRESULT, DWORD, PULONG64)(13, "GetModuleByIndex"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547146%28v=vs.85%29.aspx
-        "GetModuleNames": WINFUNCTYPE(HRESULT, DWORD, c_uint64,
-                                      PVOID, DWORD, LPDWORD, PVOID, DWORD, LPDWORD, PVOID, DWORD, LPDWORD)(16, "GetModuleNames"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549408%28v=vs.85%29.aspx
-        "GetTypeName": WINFUNCTYPE(HRESULT, ULONG64, ULONG, PVOID, ULONG, PULONG)(19, "GetTypeName"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549376%28v=vs.85%29.aspx
-        "GetTypeId": WINFUNCTYPE(HRESULT, ULONG64, c_char_p, PULONG)(20, "GetTypeId"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549457%28v=vs.85%29.aspx
-        "GetTypeSize": WINFUNCTYPE(HRESULT, ULONG64, ULONG, PULONG)(21, "GetTypeSize"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546763%28v=vs.85%29.aspx
-        "GetFieldOffset": WINFUNCTYPE(HRESULT, ULONG64, ULONG, c_char_p, PULONG)(22, "GetFieldOffset"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549173%28v=vs.85%29.aspx
-        "GetSymbolTypeId": WINFUNCTYPE(HRESULT, c_char_p, PULONG, PULONG64)(23, "GetSymbolTypeId"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff558815%28v=vs.85%29.aspx
-        "StartSymbolMatch": WINFUNCTYPE(HRESULT, c_char_p, PULONG64)(36, "StartSymbolMatch"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547856%28v=vs.85%29.aspx
-        "GetNextSymbolMatch": WINFUNCTYPE(HRESULT, ULONG64, PVOID, ULONG, PULONG, PULONG64)(37, "GetNextSymbolMatch"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff543008%28v=vs.85%29.aspx
-        "EndSymbolMatch": WINFUNCTYPE(HRESULT, ULONG64)(38, "EndSymbolMatch"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554379%28v=vs.85%29.aspx
-        "Reload": WINFUNCTYPE(HRESULT, c_char_p)(39, "Reload"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556802%28v=vs.85%29.aspx
-        "SetSymbolPath": WINFUNCTYPE(HRESULT, c_char_p)(41, "SetSymbolPath"),
-    }
+@DbgHelpProxy("SymGetTypeInfo", deffunc_module=lkd.dbgfuncs)
+def SymGetTypeInfo(hProcess, ModBase, TypeId, GetType, pInfo):
+    return SymGetTypeInfo.ctypes_function(hProcess, ModBase, TypeId, GetType, pInfo)
 
 
-class IDebugSymbols2(COMInterface):
-    _functions_ = dict(IDebugSymbols._functions_)
-    _functions_.update({
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546747%28v=vs.85%29.aspx
-        "GetFieldName": WINFUNCTYPE(HRESULT, ULONG64, ULONG, ULONG, PVOID, ULONG, PULONG)(55, "GetFieldName"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546771%28v=vs.85%29.aspx
-        "GetFieldTypeAndOffset": WINFUNCTYPE(HRESULT, ULONG64, ULONG, c_char_p, PULONG, PULONG)(105, "GetFieldTypeAndOffset"),
-    })
+# COM Vtable for python output
+class CustomOuput(COMImplementation):
+    IMPLEMENT = IDebugOutputCallbacks
 
+    def __init__(self, output):
+        super(CustomOuput, self).__init__()
+        self.output_func = output
 
-class IDebugSymbols3(COMInterface):
-    _functions_ = dict(IDebugSymbols2._functions_)
-    _functions_.update({
-    })
+    def Output(self, this, x, msg):
+        if self.output_func is not None:
+            return self.output_func(this, x, msg)
+        return 0
+custom_ouput = CustomOuput(None)
 
-
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550508%28v=vs.85%29.aspx
-class IDebugControl(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        "GetInterrupt": ctypes.WINFUNCTYPE(HRESULT)(3, "GetInterrupt"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556722%28v=vs.85%29.aspx
-        "SetInterrupt": ctypes.WINFUNCTYPE(HRESULT, ULONG)(4, "SetInterrupt"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff541948%28v=vs.85%29.aspx
-        "Disassemble": ctypes.WINFUNCTYPE(HRESULT, ULONG64, ULONG, PVOID, ULONG, PULONG, PULONG64)(26, "Disassemble"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff548425%28v=vs.85%29.aspx
-        "GetStackTrace": ctypes.WINFUNCTYPE(HRESULT, ULONG64, ULONG64, ULONG64, PDEBUG_STACK_FRAME, ULONG, PULONG)(31, "GetStackTrace"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff553252%28v=vs.85%29.aspx
-        "OutputStackTrace": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_STACK_FRAME, ULONG, ULONG)(33, "OutputStackTrace"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff551092%28v=vs.85%29.aspx
-        "IsPointer64Bit": ctypes.WINFUNCTYPE(HRESULT)(42, "IsPointer64Bit"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546675%28v=vs.85%29.aspx
-        "GetExecutionStatus": ctypes.WINFUNCTYPE(HRESULT, PULONG)(49, "GetExecutionStatus"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556693%28v=vs.85%29.aspx
-        "SetExecutionStatus": ctypes.WINFUNCTYPE(HRESULT, ULONG)(50, "SetExecutionStatus"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff543208%28v=vs.85%29.aspx
-        "Execute": ctypes.WINFUNCTYPE(HRESULT, ULONG, c_char_p, ULONG)(66, "Execute"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff537856%28v=vs.85%29.aspx
-        "AddBreakpoint": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PVOID)(72, "AddBreakpoint"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff554487%28v=vs.85%29.aspx
-        "RemoveBreakpoint": ctypes.WINFUNCTYPE(HRESULT, PVOID)(73, "RemoveBreakpoint"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547899(v=vs.85).aspx
-        "GetNumberEventFilters": ctypes.WINFUNCTYPE(HRESULT, PULONG, PULONG, PULONG)(81, "GetNumberEventFilters"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546618(v=vs.85).aspx
-        "GetEventFilterText": ctypes.WINFUNCTYPE(HRESULT, ULONG, PVOID, ULONG, PULONG)(82, "GetEventFilterText"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff548398(v=vs.85).aspx
-        "GetSpecificFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PDEBUG_SPECIFIC_FILTER_PARAMETERS)(85, "GetSpecificFilterParameters"),
-
-        "SetSpecificFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG, PDEBUG_SPECIFIC_FILTER_PARAMETERS)(86, "SetSpecificFilterParameters"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546650(v=vs.85).aspx
-        "GetExceptionFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, PULONG, ULONG, PDEBUG_EXCEPTION_FILTER_PARAMETERS)(89, "GetExceptionFilterParameters"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556683(v=vs.85).aspx  
-        "SetExceptionFilterParameters": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_EXCEPTION_FILTER_PARAMETERS)(90, "SetExceptionFilterParameters"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff561229%28v=vs.85%29.aspx
-        "WaitForEvent": WINFUNCTYPE(HRESULT, DWORD, DWORD)(93, "WaitForEvent"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546982%28v=vs.85%29.aspx
-        "GetLastEventInformation" : WINFUNCTYPE(HRESULT, PULONG, PULONG, PULONG, PVOID, ULONG, PULONG, PVOID, ULONG, PULONG)(94, "WaitForEvent")
-    }
 
 # experimental decorator
 # Just used to inform you that we are not sur if this code really works
@@ -208,6 +69,8 @@ def experimental(f):
     return f
 
 class BaseKernelDebugger(object):
+    # TODO: remove me
+    _internal_offset_cache = {}
     # Will be used if '_NT_SYMBOL_PATH' is not set
     DEFAULT_SYMBOL_PATH  = "SRV*{0}\\symbols*http://msdl.microsoft.com/download/symbols".format(realpath(dirname(dirname(__file__))))
     SYMBOL_OPT = (SYMOPT_NO_IMAGE_SEARCH + SYMOPT_AUTO_PUBLICS + SYMOPT_FAIL_CRITICAL_ERRORS +
@@ -237,10 +100,7 @@ class BaseKernelDebugger(object):
 
     def _do_debug_create(self):
         DebugClient = IDebugClient(0)
-
-        DebugCreateAddr = winproxy.GetProcAddress(self.hmoduledbgeng, "DebugCreate")
-        DebugCreate = WINFUNCTYPE(HRESULT, PVOID, PVOID)(DebugCreateAddr)
-        DebugCreate(IID_IDebugClient, byref(DebugClient))
+        DebugCreate(IDebugClient.IID, byref(DebugClient))
         return DebugClient
 
     def _ask_other_interface(self):
@@ -249,14 +109,14 @@ class BaseKernelDebugger(object):
         self.DebugSymbols = IDebugSymbols3(0)
         self.DebugControl = IDebugControl(0)
 
-        DebugClient.QueryInterface(IID_IDebugDataSpaces2, byref(self.DebugDataSpaces))
-        DebugClient.QueryInterface(IID_IDebugSymbols3, byref(self.DebugSymbols))
-        DebugClient.QueryInterface(IID_IDebugControl, byref(self.DebugControl))
+        DebugClient.QueryInterface(self.DebugDataSpaces.IID, byref(self.DebugDataSpaces))
+        DebugClient.QueryInterface(self.DebugSymbols.IID, byref(self.DebugSymbols))
+        DebugClient.QueryInterface(self.DebugControl.IID, byref(self.DebugControl))
 
     def _setup_symbols_options(self):
         symbol_path = os.environ.get('_NT_SYMBOL_PATH', self.DEFAULT_SYMBOL_PATH)
         self.DebugSymbols.SetSymbolPath(symbol_path)
-        self.DebugSymbols.SetSymbolOption(self.SYMBOL_OPT)
+        self.DebugSymbols.SetSymbolOptions(self.SYMBOL_OPT)
 
     def _wait_local_kernel_connection(self):
         self.DebugControl.WaitForEvent(0, 0xffffffff)
@@ -276,8 +136,8 @@ class BaseKernelDebugger(object):
         self.DebugSymbols.GetNumberModules(byref(numModulesLoaded), byref(numModulesUnloaded))
         for i in range(numModulesLoaded.value):
             self.DebugSymbols.GetModuleByIndex(i, byref(currModuleBase))
-            self.DebugSymbols.GetModuleNames(i, currModuleBase, byref(currImageName), 1023, byref(currImageNameSize),
-                                             byref(currModuleName), 1023, byref(currModuleNameSize), byref(currLoadedImageName),
+            self.DebugSymbols.GetModuleNames(i, currModuleBase, ctypes.cast(byref(currImageName), c_char_p), 1023, byref(currImageNameSize),
+                                             ctypes.cast(byref(currModuleName), c_char_p), 1023, byref(currModuleNameSize), ctypes.cast(byref(currLoadedImageName), c_char_p),
                                              1023, byref(currLoadedImageNameSize))
             self.DebugSymbols.Reload(currModuleName[:currModuleNameSize.value])
 
@@ -316,16 +176,16 @@ class BaseKernelDebugger(object):
         return (currImageName.value, currModuleName.value, currLoadedImageName.value)
 
     # TODO: SymGetTypeInfo goto winfunc?
-    def _init_dbghelp_func(self):
-        # We need to hack our way to some dbghelp functions
-        # Some info are not reachable through COM API
-        # 0xf0f0f0f0 is the magic handler used by dbgengine for dbghelp
-
-        dbghelp = ctypes.windll.DbgHelp
-        SymGetTypeInfoPrototype = WINFUNCTYPE(BOOL, HANDLE, DWORD64, ULONG, IMAGEHLP_SYMBOL_TYPE_INFO, PVOID)
-        SymGetTypeInfoParams = ((1, 'hProcess'), (1, 'ModBase'), (1, 'TypeId'), (1, 'GetType'), (1, 'pInfo'))
-        self.SymGetTypeInfo_ctypes = SymGetTypeInfoPrototype(("SymGetTypeInfo", dbghelp), SymGetTypeInfoParams)
-        self.SymGetTypeInfo_ctypes.errcheck =  functools.partial(windows.winproxy.kernel32_error_check, "SymGetTypeInfo")
+    #def _init_dbghelp_func(self):
+    #    # We need to hack our way to some dbghelp functions
+    #    # Some info are not reachable through COM API
+    #    # 0xf0f0f0f0 is the magic handler used by dbgengine for dbghelp
+    #
+    #    dbghelp = ctypes.windll.DbgHelp
+    #    SymGetTypeInfoPrototype = WINFUNCTYPE(BOOL, HANDLE, DWORD64, ULONG, IMAGEHLP_SYMBOL_TYPE_INFO, PVOID)
+    #    SymGetTypeInfoParams = ((1, 'hProcess'), (1, 'ModBase'), (1, 'TypeId'), (1, 'GetType'), (1, 'pInfo'))
+    #    self.SymGetTypeInfo_ctypes = SymGetTypeInfoPrototype(("SymGetTypeInfo", dbghelp), SymGetTypeInfoParams)
+    #    self.SymGetTypeInfo_ctypes.errcheck =  functools.partial(windows.winproxy.kernel32_error_check, "SymGetTypeInfo")
 
     # Internal helper
     def resolve_symbol(self, symbol):
@@ -370,6 +230,7 @@ class BaseKernelDebugger(object):
         return None
 
     def disas_one(self, addr):
+        addr = self.resolve_symbol(addr)
         size = 1000
         buffer = (ctypes.c_char * size)()
         res_size = ULONG()
@@ -407,13 +268,8 @@ class BaseKernelDebugger(object):
            | (see :file:`example\\output_demo.py`)
         """
         self._output_callback = callback
-        my_idebugoutput = IDebugOutputCallbacksVtable(Output=callback)
-        res = self.DebugClient.SetOutputCallbacks(my_idebugoutput)
-        # Need to keep reference to these object else our output callback will be
-        # garbage collected leading to crash
-        # Update self.keep_alive AFTER the call to SetOutputCallbacks because
-        # SetOutputCallbacks may call methods of the old my_debugoutput_obj
-        self.keep_alive = [my_idebugoutput]
+        custom_ouput.output_func = callback
+        res = self.DebugClient.SetOutputCallbacks(custom_ouput)
         return res
 
     def get_modules(self):
@@ -433,8 +289,8 @@ class BaseKernelDebugger(object):
         res = []
         for i in range(numModulesLoaded.value):
             self.DebugSymbols.GetModuleByIndex(i, byref(currModuleBase))
-            self.DebugSymbols.GetModuleNames(i, c_uint64(currModuleBase.value), byref(currImageName), 1023, byref(currImageNameSize),
-                                             byref(currModuleName), 1023, byref(currModuleNameSize), byref(currLoadedImageName),
+            self.DebugSymbols.GetModuleNames(i, c_uint64(currModuleBase.value), cast_to_char_p(currImageName), 1023, byref(currImageNameSize),
+                                             cast_to_char_p(currModuleName), 1023, byref(currModuleNameSize), cast_to_char_p(currLoadedImageName),
                                              1023, byref(currLoadedImageNameSize))
             # Removing trailing \x00
             res.append((currModuleName[:currModuleNameSize.value - 1], currImageName[:currImageNameSize.value - 1], currLoadedImageName[:currLoadedImageNameSize.value - 1]))
@@ -450,11 +306,16 @@ class BaseKernelDebugger(object):
         :param name: Name of the symbol
         :type name: str
         :rtype: int"""
+        print("[TODO]: REMOVE ME")
+        if name in self._internal_offset_cache:
+            return self._internal_offset_cache[name]
+        print("[RESOLVING] {0}".format(name))
         SymbolLocation = ctypes.c_uint64(0)
         try:
             self.DebugSymbols.GetOffsetByName(name, byref(SymbolLocation))
         except WindowsError:
             return None
+        self._internal_offset_cache[name] = self.trim_ulong64_to_address(SymbolLocation.value)
         return self.trim_ulong64_to_address(SymbolLocation.value)
 
     def get_symbol(self, addr):
@@ -463,13 +324,14 @@ class BaseKernelDebugger(object):
         :param addr: The address to lookup
         :type addr: int
         :rtype: str, int -- symbol name, displacement"""
+        import pdb;pdb.set_trace()
         addr = self.expand_address_to_ulong64(addr)
         buffer_size = 1024
         buffer = (c_char * buffer_size)()
         name_size = ULONG()
         displacement = ULONG64()
         try:
-            self.DebugSymbols.GetNameByOffset(addr, byref(buffer), buffer_size, byref(name_size), byref(displacement))
+            self.DebugSymbols.GetNameByOffset(addr, cast_to_char_p(buffer), buffer_size, byref(name_size), byref(displacement))
         except WindowsError as e:
             if (e.winerror & 0xffffffff) == E_FAIL:
                 return (None, None)
@@ -517,6 +379,16 @@ class BaseKernelDebugger(object):
         read = DWORD(0)
 
         self.DebugDataSpaces.ReadVirtual(c_uint64(addr), buffer, size, byref(read))
+        return buffer[0:read.value]
+
+    def read_virtual_memory_uncached(self, addr, size):
+        """BLABAL TODO FIXME
+        """
+        addr = self.resolve_symbol(addr)
+        buffer = (c_char * size)()
+        read = DWORD(0)
+
+        self.DebugDataSpaces.ReadVirtualUncached(c_uint64(addr), buffer, size, byref(read))
         return buffer[0:read.value]
 
     def write_virtual_memory(self, addr, data):
@@ -885,7 +757,7 @@ class BaseKernelDebugger(object):
         buffer = (c_char * buffer_size)()
         name_size = ULONG(0)
 
-        self.DebugSymbols.GetTypeName(module, typeid, byref(buffer), buffer_size, byref(name_size))
+        self.DebugSymbols.GetTypeName(module, typeid, cast_to_char_p(buffer), buffer_size, byref(name_size))
         res = buffer[:name_size.value]
         if res[-1] == "\x00":
             res = res[:-1]
@@ -1040,7 +912,7 @@ class BaseKernelDebugger(object):
             res = result_type.get(GetType, DWORD)(0x42424242)
 
         module, typeid = self.resolve_type(module, typeid)
-        self.SymGetTypeInfo_ctypes(self.sh_id, module, typeid, GetType, byref(res))# == 0:
+        SymGetTypeInfo(self.sh_id, module, typeid, GetType, byref(res))# == 0:
         #    print(hex(res.value))
         #    raise WindowsError("SymGetTypeInfo_ctypes")
         if ires is None:
@@ -1073,7 +945,8 @@ class BaseKernelDebugger(object):
             self.execute(cmd)
 
 class KernelDebugger32(object):
-    DEBUG_DLL_PATH = os.path.join(realpath(dirname(dirname(__file__))), "bin\\DBGDLL\\")
+    DEBUG_DLL_PATH = os.path.join(realpath(__file__), r"..\..\..", "bin\\DBGDLL\\")
+    ptr_size = 4
 
     def expand_address_to_ulong64(self, addr):
         """| Used to convert a symbol address to an ULONG64 requested by the API.
@@ -1097,6 +970,7 @@ class KernelDebugger32(object):
 
 class KernelDebugger64(object):
     DEBUG_DLL_PATH = os.path.join(realpath(dirname(dirname(__file__))), "bin\\DBGDLL64\\")
+    ptr_size = 8
 
     def expand_address_to_ulong64(self, addr):
         return addr

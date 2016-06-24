@@ -4,31 +4,32 @@ import windows
 import ctypes
 import windows
 from windows.generated_def.winstructs import *
-from dbgdef import *
-from simple_com import COMInterface, IDebugEventCallbacks
-from breakpoint import WinBreakpoint
+from lkd.dbgdef import *
+from lkd.breakpoint import WinBreakpoint
 from functools import partial
+from lkd.dbgcom import IDebugRegisters, IDebugEventCallbacks, IDebugSystemObjects4
+from lkd.dbgcom import *
 
 # TEST DEBUG_VALUE #
 
-class _DEBUG_VALUE_UNION(ctypes.Union):
-        _fields_ = [
-        ("I8", UCHAR),
-        ("I16", USHORT),
-        ("I32", ULONG),
-        ("I64", ULONG64),
-        ("RawBytes", UCHAR * 24)
-    ]
+#class _DEBUG_VALUE_UNION(ctypes.Union):
+#        _fields_ = [
+#        ("I8", UCHAR),
+#        ("I16", USHORT),
+#        ("I32", ULONG),
+#        ("I64", ULONG64),
+#        ("RawBytes", UCHAR * 24)
+#    ]
 
-class _DEBUG_VALUE(ctypes.Structure):
+class EDEBUG_VALUE(DEBUG_VALUE):
         VALUE_TRANSLATION_TABLE = {DEBUG_VALUE_INT8: "I8", DEBUG_VALUE_INT16: "I16",
             DEBUG_VALUE_INT32: "I32", DEBUG_VALUE_INT64: "I64"}
 
-        _fields_ = [
-        ("Value", _DEBUG_VALUE_UNION),
-        ("TailOfRawBytes", ULONG),
-        ("Type", ULONG),
-    ]
+    #    _fields_ = [
+    #    ("Value", _DEBUG_VALUE_UNION),
+    #    ("TailOfRawBytes", ULONG),
+    #    ("Type", ULONG),
+    #]
 
         def get_value(self):
             if self.Type == 0:
@@ -36,7 +37,7 @@ class _DEBUG_VALUE(ctypes.Structure):
             if self.Type not in self.VALUE_TRANSLATION_TABLE:
                 # TODO: full _DEBUG_VALUE_UNION and implem other DEBUG_VALUE_XXX
                 raise NotImplementedError("DEBUG_VALUE.Type == {0} (sorry)".format(self.Type))
-            return getattr(self.Value, self.VALUE_TRANSLATION_TABLE[self.Type])
+            return getattr(self.u, self.VALUE_TRANSLATION_TABLE[self.Type])
 
         def set_value(self, new_value):
             if self.Type == 0:
@@ -44,50 +45,9 @@ class _DEBUG_VALUE(ctypes.Structure):
             if self.Type not in self.VALUE_TRANSLATION_TABLE:
                 # TODO: full _DEBUG_VALUE_UNION and implem other DEBUG_VALUE_XXX
                 raise NotImplementedError("DEBUG_VALUE.Type == {0} (sorry)".format(self.Type))
-            return setattr(self.Value, self.VALUE_TRANSLATION_TABLE[self.Type], new_value)
+            return setattr(self.u, self.VALUE_TRANSLATION_TABLE[self.Type], new_value)
 
 
-
-DEBUG_VALUE = _DEBUG_VALUE
-PDEBUG_VALUE = POINTER(_DEBUG_VALUE)
-
-
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550825%28v=vs.85%29.aspx
-class IDebugRegisters(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff547960%28v=vs.85%29.aspx
-        "GetNumberRegisters": ctypes.WINFUNCTYPE(HRESULT, PULONG)(3, "GetNumberRegisters"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546575%28v=vs.85%29.aspx
-        "GetDescription": ctypes.WINFUNCTYPE(HRESULT, ULONG, PVOID, ULONG, PULONG, PDEBUG_REGISTER_DESCRIPTION)(4, "GetDescription"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff546881%28v=vs.85%29.aspx
-        "GetIndexByName": ctypes.WINFUNCTYPE(HRESULT, c_char_p, PULONG)(5, "GetIndexByName"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff549476%28v=vs.85%29.aspx
-        "GetValue": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_VALUE)(6, "GetValue"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff556881%28v=vs.85%29.aspx
-        "SetValue": ctypes.WINFUNCTYPE(HRESULT, ULONG, PDEBUG_VALUE)(7, "SetValue"),
-
-        # "GetValues": ctypes.WINFUNCTYPE(HRESULT)(8, "GetValues"),
-        # "SetValues": ctypes.WINFUNCTYPE(HRESULT)(9, "SetValues"),
-
-        "OutputRegisters": ctypes.WINFUNCTYPE(HRESULT, ULONG, ULONG)(10, "OutputRegisters"),
-    }
-
-
-# https://msdn.microsoft.com/en-us/library/windows/hardware/ff550875%28v=vs.85%29.aspx
-class IDebugSystemObjects(COMInterface):
-    _functions_ = {
-        "QueryInterface": ctypes.WINFUNCTYPE(HRESULT, PVOID, PVOID)(0, "QueryInterface"),
-        "AddRef": ctypes.WINFUNCTYPE(HRESULT)(1, "AddRef"),
-        "Release": ctypes.WINFUNCTYPE(HRESULT)(2, "Release"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff545894%28v=vs.85%29.aspx
-        "GetCurrentThreadDataOffset" : ctypes.WINFUNCTYPE(HRESULT, PULONG64)(13, "GetCurrentThreadDataOffset"),
-        # https://msdn.microsoft.com/en-us/library/windows/hardware/ff545787%28v=vs.85%29.aspx
-        "GetCurrentProcessDataOffset": ctypes.WINFUNCTYPE(HRESULT, PULONG64)(23, "GetCurrentProcessDataOffset"),
-        "GetCurrentProcessPeb": ctypes.WINFUNCTYPE(HRESULT, PULONG64)(25, "GetCurrentProcessPeb"),
-    }
 
 
 # TODO keep the register_info list in the object
@@ -113,7 +73,8 @@ class TargetRegisters(IDebugRegisters):
     keys = list_registers
 
     def get_register_value(self, index):
-        res = DEBUG_VALUE()
+        res = EDEBUG_VALUE()
+        #import pdb;pdb.set_trace()
         self.GetValue(index, byref(res))
         return res.get_value()
 
@@ -127,7 +88,7 @@ class TargetRegisters(IDebugRegisters):
 
 
     def set_register_value(self, index, value):
-        res = DEBUG_VALUE()
+        res = EDEBUG_VALUE()
         self.GetValue(index, byref(res))
         res.set_value(value)
         return self.SetValue(index, byref(res))
@@ -142,6 +103,8 @@ class TargetRegisters(IDebugRegisters):
 
     def output(self):
         self.OutputRegisters(0, 0)
+
+    dump = output
 
 LAST_EVENT_VALUES = {
  0x00000001: ("DEBUG_EVENT_BREAKPOINT", DEBUG_LAST_EVENT_INFO_BREAKPOINT),
@@ -228,9 +191,14 @@ class BaseStackFrame(DEBUG_STACK_FRAME):
         return "<StackFrame {0} {1}+{2}>".format(addr, sym, hex(disp).strip("L"))
 
 
+import time
+import cProfile, pstats, StringIO
 
 # https://msdn.microsoft.com/en-us/library/windows/hardware/ff550550%28v=vs.85%29.aspx
-class DefaultEventCallback(IDebugEventCallbacks):
+class DefaultEventCallback(COMImplementation):
+    IMPLEMENT = IDebugEventCallbacks
+
+
     def __init__(self, dbg, **implem):
         super(DefaultEventCallback, self).__init__(**implem)
         self.debugger = dbg
@@ -252,27 +220,52 @@ class DefaultEventCallback(IDebugEventCallbacks):
         return bp.trigger()
 
     def Breakpoint(self, selfcom, bpcom):
-        bp = self._get_breakpoint_from_com_ptr(bpcom)
-        return self._dispatch_to_breakpoint(bp)
+        #pr = cProfile.Profile()
+        #pr.enable()
+        try:
+            bp = self._get_breakpoint_from_com_ptr(bpcom)
+        except KeyError as e:
+            return DEBUG_STATUS_BREAK
+        x = self._dispatch_to_breakpoint(bp)
+        #end = time.time()
+        #pr.disable()
+        #s = StringIO.StringIO()
+        #sortby = 'tottime'
+        #ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        #ps.print_stats()
+        #print("BP HANDLING STAT")
+        #print s.getvalue()
+        #import pdb;pdb.set_trace()
+        return x
+
+
+# ... do something ...
+
+
+
+
 
     def Exception(self, *args):
         print("Exception")
         return DEBUG_STATUS_BREAK
 
-    CreateThread = 0
-    ExitThread = 0
-    #CreateProcess = 0
+    def CreateThread(self, *args):
+        return 0
+
+    def ExitThread(self, *args):
+        return 0
+
 
     def CreateProcess(self, *args):
         print("CreateProcess")
         import pdb;pdb.set_trace()
         return 0
 
-    ExitProcess = 0
-    LoadModule = 0
-    UnloadModule = 0
-    SystemError = 0
-    SessionStatus = 0
+    ExitProcess = ExitThread
+    LoadModule = ExitThread
+    UnloadModule = ExitThread
+    SystemError = ExitThread
+    SessionStatus = ExitThread
 
     def ChangeDebuggeeState(self, selfcom, flags, argument):
         return 0
@@ -302,25 +295,20 @@ class BaseRemoteDebugger(BaseKernelDebugger):
         self.DebugControl.SetInterrupt(DEBUG_INTERRUPT_ACTIVE)
         self._wait_local_kernel_connection()
         self._load_modules_syms()
-        self._init_dbghelp_func()
         self.reload()
         self.breakpoints = {}
 
     def _do_kernel_attach(self, str):
-        DEBUG_ATTACH_LOCAL_KERNEL = 1
-        DEBUG_ATTACH_KERNEL_CONNECTION = 0x00000000
-        res = self.DebugClient.AttachKernel(DEBUG_ATTACH_KERNEL_CONNECTION, str)
-        if res:
-            raise WinError(res)
+        return self.DebugClient.AttachKernel(DEBUG_ATTACH_KERNEL_CONNECTION, str)
 
     def _ask_other_interface(self):
         super(BaseRemoteDebugger, self)._ask_other_interface()
         DebugClient = self.DebugClient
         self.DebugRegisters = TargetRegisters(0)
-        self.DebugSystemObjects = IDebugSystemObjects(0)
+        self.DebugSystemObjects = IDebugSystemObjects4(0)
 
-        DebugClient.QueryInterface(IID_IDebugRegisters, byref(self.DebugRegisters))
-        DebugClient.QueryInterface(IID_IDebugSystemObjects, byref(self.DebugSystemObjects))
+        DebugClient.QueryInterface(self.DebugRegisters.IID, byref(self.DebugRegisters))
+        DebugClient.QueryInterface(self.DebugSystemObjects.IID, byref(self.DebugSystemObjects))
         self.registers = self.DebugRegisters
 
     def is_pointer_64bit(self):
@@ -361,7 +349,11 @@ class BaseRemoteDebugger(BaseKernelDebugger):
     def cont(self, flag=None):
         if flag is not None:
             self.set_execution_status(flag)
-        return self.DebugControl.WaitForEvent(0, 0xffffffff)
+        # Clear user interrupt if any
+        self.DebugControl.GetInterrupt()
+        x = self.DebugControl.WaitForEvent(0, 0xffffffff)
+        print("WaitForEvent -> {0}".format(x))
+        return x
 
     go =  lambda self: self.cont(flag=DEBUG_STATUS_GO)
     step =  lambda self: self.cont(flag=DEBUG_STATUS_STEP_INTO)
@@ -413,6 +405,18 @@ class BaseRemoteDebugger(BaseKernelDebugger):
         v = res.value
         return self.get_type("nt", "_EPROCESS")(self.trim_ulong64_to_address(v))
 
+    def current_process_data(self):
+        res = ULONG64()
+        self.DebugSystemObjects.GetCurrentProcessDataOffset(byref(res))
+        return res.value
+
+    def current_process_name(self):
+        size = 0x200
+        buffer = ctypes.c_buffer(0x200)
+        name_size = ULONG()
+        self.DebugSystemObjects.GetCurrentProcessExecutableName(buffer, size, name_size)
+        return buffer[:name_size.value]
+
     def current_peb(self):
         # TODO: TYPE
         res = ULONG64()
@@ -452,9 +456,6 @@ class BaseRemoteDebugger(BaseKernelDebugger):
 
         self.DebugControl.GetExceptionFilterParameters(count, None, start, res)
         return ret()
-
-    def set_exception_filter_parameters(self, i, value):
-        return self.DebugControl.SetExceptionFilterParameters(i, byref(value))
 
     def set_exception_filter_parameters(self, i, value):
         return self.DebugControl.SetExceptionFilterParameters(i, byref(value))
@@ -507,6 +508,7 @@ def RemoteDebugger(connection_string):
 
     event_callback = DefaultEventCallback(rem)
     rem.DebugClient.SetEventCallbacks(event_callback)
+    rem.event_callback = event_callback
     return rem
 
 

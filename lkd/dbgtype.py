@@ -7,7 +7,7 @@ from windows.generated_def.winstructs import *
 class DbgEngTypeBase(object):
     def __init__(self, module, typeid, kdbg):
         self.module = module
-        self.module_name = kdbg.get_symbol(module)[0]
+        #self.module_name = kdbg.get_symbol(module)[0]
         self.typeid = typeid
         self.kdbg = kdbg
 
@@ -141,7 +141,7 @@ class DbgEngtypeMapping(object):
         # Works only for list of same elements as initial structure
         # Fails for nt!_EPROCESS ThreadListHead
         if field.type.name == "_LIST_ENTRY":
-            return Mapped_LIST_ENTRY(list_entry_field, addr)
+            return Mapped_LIST_ENTRY(field, addr)
 
         if field.is_bitfield:
             x = get_mapped_type(field.type, addr)
@@ -222,6 +222,10 @@ class DbgEngtypeMappingPtr(object):
         return get_mapped_type(target_t, addr)
 
     def as_str(self):
+        if self.type.type.size == 1:
+            return self.kdbg.read_string(self.addr)
+        elif self.type.type.size == 1:
+            return self.kdbg.wread_string(self.addr)
         res = []
         for i in itertools.count():
             x = self._get_one_item(i)
