@@ -1,0 +1,40 @@
+@IID: F2DF5F53-071F-47BD-9DE6-5734C3FED689
+typedef struct IDebugAdvancedVtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugAdvanced.
+
+    // Get/SetThreadContext offer control over
+    // the full processor context for a thread.
+    // Higher-level functions, such as the
+    // IDebugRegisters interface, allow similar
+    // access in simpler and more generic ways.
+    // Get/SetThreadContext are useful when
+    // large amounts of thread context must
+    // be changed and processor-specific code
+    // is not a problem.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadContext )(
+        void* this,
+        __out_bcount(ContextSize) /* align_is(16) */ PVOID Context,
+        __in ULONG ContextSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetThreadContext )(
+        void* this,
+        __in_bcount(ContextSize) /* align_is(16) */ PVOID Context,
+        __in ULONG ContextSize
+        ) ;
+            END_INTERFACE
+        } IDebugAdvancedVtbl, *PDEBUG_ADVANCED;

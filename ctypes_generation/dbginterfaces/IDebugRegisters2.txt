@@ -1,0 +1,221 @@
+@IID: 1656AFA9-19C6-4E3A-97E7-5DC9160CF9C4
+typedef struct IDebugRegisters2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugRegisters.
+
+    HRESULT ( STDMETHODCALLTYPE *GetNumberRegisters )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetDescription )(
+        void* this,
+        __in ULONG Register,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PDEBUG_REGISTER_DESCRIPTION Desc
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetIndexByName )(
+        void* this,
+        __in PCSTR Name,
+        __out PULONG Index
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetValue )(
+        void* this,
+        __in ULONG Register,
+        __out PDEBUG_VALUE Value
+        ) ;
+    // SetValue makes a best effort at coercing
+    // the given value into the given registers
+    // value type.  If the given value is larger
+    // than the register can hold the least
+    // significant bits will be dropped.  Float
+    // to int and int to float will be done
+    // if necessary.  Subregister bits will be
+    // inserted into the master register.
+    HRESULT ( STDMETHODCALLTYPE *SetValue )(
+        void* this,
+        __in ULONG Register,
+        __in PDEBUG_VALUE Value
+        ) ;
+    // Gets Count register values.  If Indices is
+    // non-NULL it must contain Count register
+    // indices which control the registers affected.
+    // If Indices is NULL the registers from Start
+    // to Start + Count  1 are retrieved.
+    HRESULT ( STDMETHODCALLTYPE *GetValues )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetValues )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __in_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+
+    // Outputs a group of registers in a well-formatted
+    // way thats specific to the platforms register set.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputRegisters )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags
+        ) ;
+
+    // Abstracted pieces of processor information.
+    // The mapping of these values to architectural
+    // registers is architecture-specific and their
+    // interpretation and existence may vary.  They
+    // are intended to be directly compatible with
+    // calls which take this information, such as
+    // stack walking.
+    HRESULT ( STDMETHODCALLTYPE *GetInstructionOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetStackOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetFrameOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+
+    // IDebugRegisters2.
+
+    HRESULT ( STDMETHODCALLTYPE *GetDescriptionWide )(
+        void* this,
+        __in ULONG Register,
+        __out_ecount_opt(NameBufferSize) PWSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PDEBUG_REGISTER_DESCRIPTION Desc
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetIndexByNameWide )(
+        void* this,
+        __in PCWSTR Name,
+        __out PULONG Index
+        ) ;
+
+    // Pseudo-registers are synthetic values derived
+    // by the engine that are presented in a manner
+    // similar to regular registers.  They are simple
+    // value holders, similar to actual registers.
+    // Pseudo-registers are defined for concepts,
+    // such as current-instruction-pointer or
+    // current-thread-data.  As such they have
+    // types appropriate for their data.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberPseudoRegisters )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPseudoDescription )(
+        void* this,
+        __in ULONG Register,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PULONG64 TypeModule,
+        __out_opt PULONG TypeId
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPseudoDescriptionWide )(
+        void* this,
+        __in ULONG Register,
+        __out_ecount_opt(NameBufferSize) PWSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PULONG64 TypeModule,
+        __out_opt PULONG TypeId
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPseudoIndexByName )(
+        void* this,
+        __in PCSTR Name,
+        __out PULONG Index
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPseudoIndexByNameWide )(
+        void* this,
+        __in PCWSTR Name,
+        __out PULONG Index
+        ) ;
+    // Some pseudo-register values are affected
+    // by the register source, others are not.
+    HRESULT ( STDMETHODCALLTYPE *GetPseudoValues )(
+        void* this,
+        __in ULONG Source,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+    // Many pseudo-registers are read-only and cannot be set.
+    HRESULT ( STDMETHODCALLTYPE *SetPseudoValues )(
+        void* this,
+        __in ULONG Source,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __in_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+
+    // These expanded methods allow selection
+    // of the source of register information.
+    HRESULT ( STDMETHODCALLTYPE *GetValues2 )(
+        void* this,
+        __in ULONG Source,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetValues2 )(
+        void* this,
+        __in ULONG Source,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __in_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputRegisters2 )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Source,
+        __in ULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetInstructionOffset2 )(
+        void* this,
+        __in ULONG Source,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetStackOffset2 )(
+        void* this,
+        __in ULONG Source,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetFrameOffset2 )(
+        void* this,
+        __in ULONG Source,
+        __out PULONG64 Offset
+        ) ;
+            END_INTERFACE
+        } IDebugRegisters2Vtbl, *PDEBUG_REGISTERS2;

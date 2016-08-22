@@ -1,0 +1,44 @@
+@IID: 67721FE9-56D2-4A44-A325-2B65513CE6EB
+typedef struct IDebugOutputCallbacks2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugOutputCallbacks.
+
+    // This method is not used.
+    HRESULT ( STDMETHODCALLTYPE *Output )(
+        void* this,
+        __in ULONG Mask,
+        __in PCSTR Text
+        ) ;
+
+    // IDebugOutputCallbacks2.
+
+    // The engine calls GetInterestMask once when
+    // the callbacks are set for a client.
+    HRESULT ( STDMETHODCALLTYPE *GetInterestMask )(
+        void* this,
+        __out PULONG Mask
+        ) ;
+    
+    HRESULT ( STDMETHODCALLTYPE *Output2 )(
+        void* this,
+        __in ULONG Which,
+        __in ULONG Flags,
+        __in ULONG64 Arg,
+        __in_opt PCWSTR Text
+        ) ;
+            END_INTERFACE
+        } IDebugOutputCallbacks2Vtbl, *PDEBUG_OUTPUT_CALLBACKS2;

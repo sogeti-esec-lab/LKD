@@ -1,0 +1,108 @@
+@IID: 716D14C9-119B-4BA5-AF1F-0890E672416A
+typedef struct IDebugAdvanced2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugAdvanced.
+
+    // Get/SetThreadContext offer control over
+    // the full processor context for a thread.
+    // Higher-level functions, such as the
+    // IDebugRegisters interface, allow similar
+    // access in simpler and more generic ways.
+    // Get/SetThreadContext are useful when
+    // large amounts of thread context must
+    // be changed and processor-specific code
+    // is not a problem.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadContext )(
+        void* this,
+        __out_bcount(ContextSize) /* align_is(16) */ PVOID Context,
+        __in ULONG ContextSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetThreadContext )(
+        void* this,
+        __in_bcount(ContextSize) /* align_is(16) */ PVOID Context,
+        __in ULONG ContextSize
+        ) ;
+
+    // IDebugAdvanced2.
+
+    //
+    // Generalized open-ended methods for querying
+    // and manipulation.  The open-ended nature of
+    // these methods makes it easy to add new requests,
+    // although at a cost in convenience of calling.
+    // Sufficiently common requests may have more specific,
+    // simpler methods elsewhere.
+    //
+
+    HRESULT ( STDMETHODCALLTYPE *Request )(
+        void* this,
+        __in ULONG Request,
+        __in_bcount_opt(InBufferSize) PVOID InBuffer,
+        __in ULONG InBufferSize,
+        __out_bcount_opt(OutBufferSize) PVOID OutBuffer,
+        __in ULONG OutBufferSize,
+        __out_opt PULONG OutSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSourceFileInformation )(
+        void* this,
+        __in ULONG Which,
+        __in PSTR SourceFile,
+        __in ULONG64 Arg64,
+        __in ULONG Arg32,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InfoSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *FindSourceFileAndToken )(
+        void* this,
+        __in ULONG StartElement,
+        __in ULONG64 ModAddr,
+        __in PCSTR File,
+        __in ULONG Flags,
+        __in_bcount_opt(FileTokenSize) PVOID FileToken,
+        __in ULONG FileTokenSize,
+        __out_opt PULONG FoundElement,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FoundSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolInformation )(
+        void* this,
+        __in ULONG Which,
+        __in ULONG64 Arg64,
+        __in ULONG Arg32,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InfoSize,
+        __out_ecount_opt(StringBufferSize) PSTR StringBuffer,
+        __in ULONG StringBufferSize,
+        __out_opt PULONG StringSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSystemObjectInformation )(
+        void* this,
+        __in ULONG Which,
+        __in ULONG64 Arg64,
+        __in ULONG Arg32,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InfoSize
+        ) ;
+            END_INTERFACE
+        } IDebugAdvanced2Vtbl, *PDEBUG_ADVANCED2;

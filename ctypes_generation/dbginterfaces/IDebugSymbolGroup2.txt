@@ -1,0 +1,159 @@
+@IID: 6A7CCC5F-FB5E-4DCC-B41C-6C20307BCCC7
+typedef struct IDebugSymbolGroup2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugSymbolGroup.
+
+    HRESULT ( STDMETHODCALLTYPE *GetNumberSymbols )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    // On input Index indicates the desired insertion
+    // index.  On output Index contains the actual index.
+    // Use DEBUG_ANY_ID to append a symbol to the end.
+    HRESULT ( STDMETHODCALLTYPE *AddSymbol )(
+        void* this,
+        __in PCSTR Name,
+        __inout PULONG Index
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveSymbolByName )(
+        void* this,
+        __in PCSTR Name
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveSymbolByIndex )(
+        void* this,
+        __in ULONG Index
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolName )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolParameters )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount(Count) PDEBUG_SYMBOL_PARAMETERS Params
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ExpandSymbol )(
+        void* this,
+        __in ULONG Index,
+        __in BOOL Expand
+        ) ;
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputSymbols )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags,
+        __in ULONG Start,
+        __in ULONG Count
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteSymbol )(
+        void* this,
+        __in ULONG Index,
+        __in PCSTR Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputAsType )(
+        void* this,
+        __in ULONG Index,
+        __in PCSTR Type
+        ) ;
+
+    // IDebugSymbolGroup2.
+
+    HRESULT ( STDMETHODCALLTYPE *AddSymbolWide )(
+        void* this,
+        __in PCWSTR Name,
+        __inout PULONG Index
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveSymbolByNameWide )(
+        void* this,
+        __in PCWSTR Name
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolNameWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteSymbolWide )(
+        void* this,
+        __in ULONG Index,
+        __in PCWSTR Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputAsTypeWide )(
+        void* this,
+        __in ULONG Index,
+        __in PCWSTR Type
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolTypeName )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolTypeNameWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolSize )(
+        void* this,
+        __in ULONG Index,
+        __out PULONG Size
+        ) ;
+    // If the symbol has an absolute address
+    // this method will retrieve it.
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolOffset )(
+        void* this,
+        __in ULONG Index,
+        __out PULONG64 Offset
+        ) ;
+    // If the symbol is enregistered this
+    // method will return the register index.
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolRegister )(
+        void* this,
+        __in ULONG Index,
+        __out PULONG Register
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolValueText )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolValueTextWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolEntryInformation )(
+        void* this,
+        __in ULONG Index,
+        __out PDEBUG_SYMBOL_ENTRY Entry
+        ) ;
+            END_INTERFACE
+        } IDebugSymbolGroup2Vtbl, *PDEBUG_SYMBOL_GROUP2;

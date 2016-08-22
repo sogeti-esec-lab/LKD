@@ -1,0 +1,419 @@
+@IID: D98ADA1F-29E9-4EF5-A6C0-E53349883212
+typedef struct IDebugDataSpaces4Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugDataSpaces.
+
+    HRESULT ( STDMETHODCALLTYPE *ReadVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    // SearchVirtual searches the given virtual
+    // address range for the given pattern.  PatternSize
+    // gives the byte length of the pattern and PatternGranularity
+    // controls the granularity of comparisons during
+    // the search.
+    // For example, a DWORD-granular search would
+    // use a pattern granularity of four to search by DWORD
+    // increments.
+    HRESULT ( STDMETHODCALLTYPE *SearchVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Length,
+        __in_bcount(PatternSize) PVOID Pattern,
+        __in ULONG PatternSize,
+        __in ULONG PatternGranularity,
+        __out PULONG64 MatchOffset
+        ) ;
+    // These methods are identical to Read/WriteVirtual
+    // except that they avoid the kernel virtual memory
+    // cache entirely and are therefore useful for reading
+    // virtual memory which is inherently volatile, such
+    // as memory-mapped device areas, without contaminating
+    // or invalidating the cache.
+    // In user-mode they are the same as Read/WriteVirtual.
+    HRESULT ( STDMETHODCALLTYPE *ReadVirtualUncached )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteVirtualUncached )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    // The following two methods are convenience
+    // methods for accessing pointer values.
+    // They automatically convert between native pointers
+    // and canonical 64-bit values as necessary.
+    // These routines stop at the first failure.
+    HRESULT ( STDMETHODCALLTYPE *ReadPointersVirtual )(
+        void* this,
+        __in ULONG Count,
+        __in ULONG64 Offset,
+        __out_ecount(Count) PULONG64 Ptrs
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WritePointersVirtual )(
+        void* this,
+        __in ULONG Count,
+        __in ULONG64 Offset,
+        __in_ecount(Count) PULONG64 Ptrs
+        ) ;
+    // All non-virtual data spaces are only
+    // available when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *ReadPhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WritePhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadControl )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteControl )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadIo )(
+        void* this,
+        __in ULONG InterfaceType,
+        __in ULONG BusNumber,
+        __in ULONG AddressSpace,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteIo )(
+        void* this,
+        __in ULONG InterfaceType,
+        __in ULONG BusNumber,
+        __in ULONG AddressSpace,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadMsr )(
+        void* this,
+        __in ULONG Msr,
+        __out PULONG64 Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteMsr )(
+        void* this,
+        __in ULONG Msr,
+        __in ULONG64 Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadBusData )(
+        void* this,
+        __in ULONG BusDataType,
+        __in ULONG BusNumber,
+        __in ULONG SlotNumber,
+        __in ULONG Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteBusData )(
+        void* this,
+        __in ULONG BusDataType,
+        __in ULONG BusNumber,
+        __in ULONG SlotNumber,
+        __in ULONG Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *CheckLowMemory )(
+        void* this,
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadDebuggerData )(
+        void* this,
+        __in ULONG Index,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DataSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadProcessorSystemData )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG Index,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DataSize
+        ) ;
+
+    // IDebugDataSpaces2.
+
+    HRESULT ( STDMETHODCALLTYPE *VirtualToPhysical )(
+        void* this,
+        __in ULONG64 Virtual,
+        __out PULONG64 Physical
+        ) ;
+    // Returns the physical addresses for the
+    // N levels of the systems paging structures.
+    // Level zero is the starting base physical
+    // address for virtual translations.
+    // Levels one-(N-1) will point to the appropriate
+    // paging descriptor for the virtual address at
+    // the given level of the paging hierarchy.  The
+    // exact number of levels depends on many factors.
+    // The last level will be the fully translated
+    // physical address, matching what VirtualToPhysical
+    // returns.  If the address can only be partially
+    // translated S_FALSE is returned.
+    HRESULT ( STDMETHODCALLTYPE *GetVirtualTranslationPhysicalOffsets )(
+        void* this,
+        __in ULONG64 Virtual,
+        __out_ecount_opt(OffsetsSize) PULONG64 Offsets,
+        __in ULONG OffsetsSize,
+        __out_opt PULONG Levels
+        ) ;
+
+    // System handle data is accessible in certain
+    // debug sessions.  The particular data available
+    // varies from session to session and platform
+    // to platform.
+    HRESULT ( STDMETHODCALLTYPE *ReadHandleData )(
+        void* this,
+        __in ULONG64 Handle,
+        __in ULONG DataType,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DataSize
+        ) ;
+
+    // Fills memory with the given pattern.
+    // The fill stops at the first non-writable byte.
+    HRESULT ( STDMETHODCALLTYPE *FillVirtual )(
+        void* this,
+        __in ULONG64 Start,
+        __in ULONG Size,
+        __in_bcount(PatternSize) PVOID Pattern,
+        __in ULONG PatternSize,
+        __out_opt PULONG Filled
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *FillPhysical )(
+        void* this,
+        __in ULONG64 Start,
+        __in ULONG Size,
+        __in_bcount(PatternSize) PVOID Pattern,
+        __in ULONG PatternSize,
+        __out_opt PULONG Filled
+        ) ;
+
+    // Queries virtual memory mapping information given
+    // an address similarly to the Win32 API VirtualQuery.
+    // MEMORY_BASIC_INFORMATION64 is defined in crash.h.
+    // This method currently only works for user-mode sessions.
+    HRESULT ( STDMETHODCALLTYPE *QueryVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PMEMORY_BASIC_INFORMATION64 Info
+        ) ;
+
+    // IDebugDataSpaces3.
+
+    // Convenience method for reading an image
+    // header from virtual memory.  Given the
+    // image base, this method determines where
+    // the NT headers are, validates the necessary
+    // markers and converts the headers into
+    // 64-bit form for consistency.
+    // A caller can check whether the headers were
+    // originally 32-bit by checking the optional
+    // header magic value.
+    // This method will not read ROM headers.
+    HRESULT ( STDMETHODCALLTYPE *ReadImageNtHeaders )(
+        void* this,
+        __in ULONG64 ImageBase,
+        __out PIMAGE_NT_HEADERS64 Headers
+        ) ;
+
+    // Some debug sessions have arbitrary additional
+    // data available.  For example, additional dump
+    // information files may contain extra information
+    // gathered at the same time as the primary dump.
+    // Such information is tagged with a unique identifier
+    // and can only be retrieved via the tag.
+    // Tagged data cannot be partially available; the
+    // tagged block is either fully present or completely
+    // absent.
+    HRESULT ( STDMETHODCALLTYPE *ReadTagged )(
+        void* this,
+        __in LPGUID Tag,
+        __in ULONG Offset,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG TotalSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *StartEnumTagged )(
+        void* this,
+        __out PULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetNextTagged )(
+        void* this,
+        __in ULONG64 Handle,
+        __out LPGUID Tag,
+        __out PULONG Size
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *EndEnumTagged )(
+        void* this,
+        __in ULONG64 Handle
+        ) ;
+
+    // IDebugDataSpaces4.
+
+    // General information about an address in the given data space.
+    // Queries are from DEBUG_OFFSINFO_*.
+    HRESULT ( STDMETHODCALLTYPE *GetOffsetInformation )(
+        void* this,
+        __in ULONG Space,
+        __in ULONG Which,
+        __in ULONG64 Offset,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InfoSize
+        ) ;
+
+    // Given a particular address, return the
+    // next address which has a different validity.
+    // For example, in debug sessions such as a live
+    // user-mode session where virtual address validity
+    // changes from page to page this will return the
+    // page after the given page.  In sessions such as
+    // a user-mode dump file where validity can change
+    // from byte to byte this will return the start of
+    // the next region that has different validity.
+    HRESULT ( STDMETHODCALLTYPE *GetNextDifferentlyValidOffsetVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG64 NextOffset
+        ) ;
+
+    // Given a particular range of virtual addresses,
+    // find the first region which is valid memory.
+    HRESULT ( STDMETHODCALLTYPE *GetValidRegionVirtual )(
+        void* this,
+        __in ULONG64 Base,
+        __in ULONG Size,
+        __out PULONG64 ValidBase,
+        __out PULONG ValidSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *SearchVirtual2 )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Length,
+        __in ULONG Flags,
+        __in_bcount(PatternSize) PVOID Pattern,
+        __in ULONG PatternSize,
+        __in ULONG PatternGranularity,
+        __out PULONG64 MatchOffset
+        ) ;
+
+    // Attempts to read a multi-byte string
+    // starting at the given virtual address.
+    // The possible string length, including terminator,
+    // is capped at the given max size.
+    // If a return buffer is given it will always
+    // be terminated.
+    HRESULT ( STDMETHODCALLTYPE *ReadMultiByteStringVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG MaxBytes,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringBytes
+        ) ;
+    // Reads a multi-byte string and converts
+    // it to Unicode using the given code page.
+    HRESULT ( STDMETHODCALLTYPE *ReadMultiByteStringVirtualWide )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG MaxBytes,
+        __in ULONG CodePage,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringBytes
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadUnicodeStringVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG MaxBytes,
+        __in ULONG CodePage,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringBytes
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadUnicodeStringVirtualWide )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG MaxBytes,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringBytes
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *ReadPhysical2 )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WritePhysical2 )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+            END_INTERFACE
+        } IDebugDataSpaces4Vtbl, *PDEBUG_DATA_SPACES4;

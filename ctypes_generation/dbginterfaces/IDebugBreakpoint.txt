@@ -1,0 +1,171 @@
+@IID: 5BD9D474-5975-423A-B88B-65A8E7110E65
+typedef struct IDebugBreakpointVtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugBreakpoint.
+
+    // Retrieves debugger engine unique ID
+    // for the breakpoint.  This ID is
+    // fixed as long as the breakpoint exists
+    // but after that may be reused.
+    HRESULT ( STDMETHODCALLTYPE *GetId )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    // Retrieves the type of break and
+    // processor type for the breakpoint.
+    HRESULT ( STDMETHODCALLTYPE *GetType )(
+        void* this,
+        __out PULONG BreakType,
+        __out PULONG ProcType
+        ) ;
+    // Returns the client that called AddBreakpoint.
+    HRESULT ( STDMETHODCALLTYPE *GetAdder )(
+        void* this,
+        __out PDEBUG_CLIENT* Adder
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetFlags )(
+        void* this,
+        __out PULONG Flags
+        ) ;
+    // Only certain flags can be changed.  Flags
+    // are: GO_ONLY, ENABLE.
+    // Sets the given flags.
+    HRESULT ( STDMETHODCALLTYPE *AddFlags )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+    // Clears the given flags.
+    HRESULT ( STDMETHODCALLTYPE *RemoveFlags )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+    // Sets the flags.
+    HRESULT ( STDMETHODCALLTYPE *SetFlags )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+
+    // Controls the offset of the breakpoint.  The
+    // interpretation of the offset value depends on
+    // the type of breakpoint and its settings.  It
+    // may be a code address, a data address, an
+    // I/O port, etc.
+    HRESULT ( STDMETHODCALLTYPE *GetOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOffset )(
+        void* this,
+        __in ULONG64 Offset
+        ) ;
+
+    // Data breakpoint methods will fail if the
+    // target platform does not support the
+    // parameters used.
+    // These methods only function for breakpoints
+    // created as data breakpoints.
+    HRESULT ( STDMETHODCALLTYPE *GetDataParameters )(
+        void* this,
+        __out PULONG Size,
+        __out PULONG AccessType
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetDataParameters )(
+        void* this,
+        __in ULONG Size,
+        __in ULONG AccessType
+        ) ;
+
+    // Pass count defaults to one.
+    HRESULT ( STDMETHODCALLTYPE *GetPassCount )(
+        void* this,
+        __out PULONG Count
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetPassCount )(
+        void* this,
+        __in ULONG Count
+        ) ;
+    // Gets the current number of times
+    // the breakpoint has been hit since
+    // it was last triggered.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentPassCount )(
+        void* this,
+        __out PULONG Count
+        ) ;
+
+    // If a match thread is set this breakpoint will
+    // only trigger if it occurs on the match thread.
+    // Otherwise it triggers for all threads.
+    // Thread restrictions are not currently supported
+    // in kernel mode.
+    HRESULT ( STDMETHODCALLTYPE *GetMatchThreadId )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetMatchThreadId )(
+        void* this,
+        __in ULONG Thread
+        ) ;
+
+    // The command for a breakpoint is automatically
+    // executed by the engine before the event
+    // is propagated.  If the breakpoint continues
+    // execution the event will begin with a continue
+    // status.  If the breakpoint does not continue
+    // the event will begin with a break status.
+    // This allows breakpoint commands to participate
+    // in the normal event status voting.
+    // Breakpoint commands are only executed until
+    // the first command that alters the execution
+    // status, such as g, p and t.
+    HRESULT ( STDMETHODCALLTYPE *GetCommand )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG CommandSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetCommand )(
+        void* this,
+        __in PCSTR Command
+        ) ;
+
+    // Offset expressions are evaluated immediately
+    // and at module load and unload events.  If the
+    // evaluation is successful the breakpoints
+    // offset is updated and the breakpoint is
+    // handled normally.  If the expression cannot
+    // be evaluated the breakpoint is deferred.
+    // Currently the only offset expression
+    // supported is a module-relative symbol
+    // of the form <Module>!<Symbol>.
+    HRESULT ( STDMETHODCALLTYPE *GetOffsetExpression )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ExpressionSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOffsetExpression )(
+        void* this,
+        __in PCSTR Expression
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetParameters )(
+        void* this,
+        __out PDEBUG_BREAKPOINT_PARAMETERS Params
+        ) ;
+            END_INTERFACE
+        } IDebugBreakpointVtbl, *PDEBUG_BREAKPOINT;

@@ -1,0 +1,13 @@
+HRESULT WINAPI DebugCreate(
+  _In_  REFIID InterfaceId,
+  _Out_ PVOID  *Interface
+);
+
+
+BOOL WINAPI SymGetTypeInfo(
+  _In_  HANDLE                    hProcess,
+  _In_  DWORD64                   ModBase,
+  _In_  ULONG                     TypeId,
+  _In_  IMAGEHLP_SYMBOL_TYPE_INFO GetType,
+  _Out_ PVOID                     pInfo
+);

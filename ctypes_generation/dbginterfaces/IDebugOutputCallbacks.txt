@@ -1,0 +1,29 @@
+@IID: 4BF58045-D654-4C40-B0AF-683090F356DC
+typedef struct IDebugOutputCallbacksVtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugOutputCallbacks.
+
+    // This method is only called if the supplied mask
+    // is allowed by the clients output control.
+    // The return value is ignored.
+    HRESULT ( STDMETHODCALLTYPE *Output )(
+        void* this,
+        __in ULONG Mask,
+        __in PCSTR Text
+        ) ;
+            END_INTERFACE
+        } IDebugOutputCallbacksVtbl, *PDEBUG_OUTPUT_CALLBACKS;

@@ -244,9 +244,9 @@ class DefaultEventCallback(COMImplementation):
 
 
 
-
     def Exception(self, *args):
-        print("Exception")
+        #print("Exception :DD")
+        #import pdb;pdb.set_trace()
         return DEBUG_STATUS_BREAK
 
     def CreateThread(self, *args):
@@ -307,8 +307,8 @@ class BaseRemoteDebugger(BaseKernelDebugger):
         self.DebugRegisters = TargetRegisters(0)
         self.DebugSystemObjects = IDebugSystemObjects4(0)
 
-        DebugClient.QueryInterface(self.DebugRegisters.IID, byref(self.DebugRegisters))
-        DebugClient.QueryInterface(self.DebugSystemObjects.IID, byref(self.DebugSystemObjects))
+        DebugClient.QueryInterface(self.DebugRegisters.IID, self.DebugRegisters)
+        DebugClient.QueryInterface(self.DebugSystemObjects.IID, self.DebugSystemObjects)
         self.registers = self.DebugRegisters
 
     def is_pointer_64bit(self):

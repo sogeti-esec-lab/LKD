@@ -1,0 +1,1410 @@
+@IID: 94E60CE9-9B41-4B19-9FC0-6D9EB35272B3
+typedef struct IDebugControl4Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugControl.
+
+    // Checks for a user interrupt, such a Ctrl-C
+    // or stop button.
+    // This method is reentrant.
+    HRESULT ( STDMETHODCALLTYPE *GetInterrupt )(
+        void* this,
+        ) ;
+    // Registers a user interrupt.
+    // This method is reentrant.
+    HRESULT ( STDMETHODCALLTYPE *SetInterrupt )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+    // Interrupting a user-mode process requires
+    // access to some system resources that the
+    // process may hold itself, preventing the
+    // interrupt from occurring.  The engine
+    // will time-out pending interrupt requests
+    // and simulate an interrupt if necessary.
+    // These methods control the interrupt timeout.
+    HRESULT ( STDMETHODCALLTYPE *GetInterruptTimeout )(
+        void* this,
+        __out PULONG Seconds
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetInterruptTimeout )(
+        void* this,
+        __in ULONG Seconds
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetLogFile )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FileSize,
+        __out PBOOL Append
+        ) ;
+    // Opens a log file which collects all
+    // output.  Output from every client except
+    // those that explicitly disable logging
+    // goes into the log.
+    // Opening a log file closes any log file
+    // already open.
+    HRESULT ( STDMETHODCALLTYPE *OpenLogFile )(
+        void* this,
+        __in PCSTR File,
+        __in BOOL Append
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *CloseLogFile )(
+        void* this,
+        ) ;
+    // Controls what output is logged.
+    HRESULT ( STDMETHODCALLTYPE *GetLogMask )(
+        void* this,
+        __out PULONG Mask
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetLogMask )(
+        void* this,
+        __in ULONG Mask
+        ) ;
+
+    // Input requests input from all clients.
+    // The first input that is returned is used
+    // to satisfy the call.  Other returned
+    // input is discarded.
+    HRESULT ( STDMETHODCALLTYPE *Input )(
+        void* this,
+        __out_ecount(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InputSize
+        ) ;
+    // This method is used by clients to return
+    // input when it is available.  It will
+    // return S_OK if the input is used to
+    // satisfy an Input call and S_FALSE if
+    // the input is ignored.
+    // This method is reentrant.
+    HRESULT ( STDMETHODCALLTYPE *ReturnInput )(
+        void* this,
+        __in PCSTR Buffer
+        ) ;
+
+    // Sends output through clients
+    // output callbacks if the mask is allowed
+    // by the current output control mask and
+    // according to the output distribution
+    // settings.
+    HRESULT ( STDMETHODCALLTYPE *Output )(
+        void* this,
+        __in ULONG Mask,
+        __in PCSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputVaList )(
+        void* this,
+        __in ULONG Mask,
+        __in PCSTR Format,
+        __in va_list Args
+        ) ;
+    // The following methods allow direct control
+    // over the distribution of the given output
+    // for situations where something other than
+    // the default is desired.  These methods require
+    // extra work in the engine so they should
+    // only be used when necessary.
+    HRESULT ( STDMETHODCALLTYPE *ControlledOutput )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Mask,
+        __in PCSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ControlledOutputVaList )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Mask,
+        __in PCSTR Format,
+        __in va_list Args
+        ) ;
+
+    // Displays the standard command-line prompt
+    // followed by the given output.  If Format
+    // is NULL no additional output is produced.
+    // Output is produced under the
+    // DEBUG_OUTPUT_PROMPT mask.
+    // This method only outputs the prompt; it
+    // does not get input.
+    HRESULT ( STDMETHODCALLTYPE *OutputPrompt )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_opt PCSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputPromptVaList )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_opt PCSTR Format,
+        __in va_list Args
+        ) ;
+    // Gets the text that would be displayed by OutputPrompt.
+    HRESULT ( STDMETHODCALLTYPE *GetPromptText )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG TextSize
+        ) ;
+    // Outputs information about the current
+    // debuggee state such as a register
+    // summary, disassembly at the current PC,
+    // closest symbol and others.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputCurrentState )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags
+        ) ;
+
+    // Outputs the debugger and extension version
+    // information.  This method is reentrant.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputVersionInformation )(
+        void* this,
+        __in ULONG OutputControl
+        ) ;
+
+    // In user-mode debugging sessions the
+    // engine will set an event when
+    // exceptions are continued.  This can
+    // be used to synchronize other processes
+    // with the debuggers handling of events.
+    // For example, this is used to support
+    // the e argument to ntsd.
+    HRESULT ( STDMETHODCALLTYPE *GetNotifyEventHandle )(
+        void* this,
+        __out PULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetNotifyEventHandle )(
+        void* this,
+        __in ULONG64 Handle
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *Assemble )(
+        void* this,
+        __in ULONG64 Offset,
+        __in PCSTR Instr,
+        __out PULONG64 EndOffset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *Disassemble )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DisassemblySize,
+        __out PULONG64 EndOffset
+        ) ;
+    // Returns the value of the effective address
+    // computed for the last Disassemble, if there
+    // was one.
+    HRESULT ( STDMETHODCALLTYPE *GetDisassembleEffectiveOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // Uses the line prefix if necessary.
+    HRESULT ( STDMETHODCALLTYPE *OutputDisassembly )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __out PULONG64 EndOffset
+        ) ;
+    // Produces multiple lines of disassembly output.
+    // There will be PreviousLines of disassembly before
+    // the given offset if a valid disassembly exists.
+    // In all, there will be TotalLines of output produced.
+    // The first and last line offsets are returned
+    // specially and all lines offsets can be retrieved
+    // through LineOffsets.  LineOffsets will contain
+    // offsets for each line where disassembly started.
+    // When disassembly of a single instruction takes
+    // multiple lines the initial offset will be followed
+    // by DEBUG_INVALID_OFFSET.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputDisassemblyLines )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG PreviousLines,
+        __in ULONG TotalLines,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __out_opt PULONG OffsetLine,
+        __out_opt PULONG64 StartOffset,
+        __out_opt PULONG64 EndOffset,
+        __out_ecount_opt(TotalLines) PULONG64 LineOffsets
+        ) ;
+    // Returns the offset of the start of
+    // the instruction thats the given
+    // delta away from the instruction
+    // at the initial offset.
+    // This routine does not check for
+    // validity of the instruction or
+    // the memory containing it.
+    HRESULT ( STDMETHODCALLTYPE *GetNearInstruction )(
+        void* this,
+        __in ULONG64 Offset,
+        __in LONG Delta,
+        __out PULONG64 NearOffset
+        ) ;
+
+    // Offsets can be passed in as zero to use the current
+    // thread state.
+    HRESULT ( STDMETHODCALLTYPE *GetStackTrace )(
+        void* this,
+        __in ULONG64 FrameOffset,
+        __in ULONG64 StackOffset,
+        __in ULONG64 InstructionOffset,
+        __out_ecount(FramesSize) PDEBUG_STACK_FRAME Frames,
+        __in ULONG FramesSize,
+        __out_opt PULONG FramesFilled
+        ) ;
+    // Does a simple stack trace to determine
+    // what the current return address is.
+    HRESULT ( STDMETHODCALLTYPE *GetReturnOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // If Frames is NULL OutputStackTrace will
+    // use GetStackTrace to get FramesSize frames
+    // and then output them.  The current register
+    // values for frame, stack and instruction offsets
+    // are used.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputStackTrace )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_ecount_opt(FramesSize) PDEBUG_STACK_FRAME Frames,
+        __in ULONG FramesSize,
+        __in ULONG Flags
+        ) ;
+
+    // Returns information about the debuggee such
+    // as user vs. kernel, dump vs. live, etc.
+    HRESULT ( STDMETHODCALLTYPE *GetDebuggeeType )(
+        void* this,
+        __out PULONG Class,
+        __out PULONG Qualifier
+        ) ;
+    // Returns the type of physical processors in
+    // the machine.
+    // Returns one of the IMAGE_FILE_MACHINE values.
+    HRESULT ( STDMETHODCALLTYPE *GetActualProcessorType )(
+        void* this,
+        __out PULONG Type
+        ) ;
+    // Returns the type of processor used in the
+    // current processor context.
+    HRESULT ( STDMETHODCALLTYPE *GetExecutingProcessorType )(
+        void* this,
+        __out PULONG Type
+        ) ;
+    // Query all the possible processor types that
+    // may be encountered during this debug session.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberPossibleExecutingProcessorTypes )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPossibleExecutingProcessorTypes )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount(Count) PULONG Types
+        ) ;
+    // Get the number of actual processors in
+    // the machine.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberProcessors )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    // PlatformId is one of the VER_PLATFORM values.
+    // Major and minor are as given in the NT
+    // kernel debugger protocol.
+    // ServicePackString and ServicePackNumber indicate the
+    // system service pack level.  ServicePackNumber is not
+    // available in some sessions where the service pack level
+    // is only expressed as a string.  The service pack information
+    // will be empty if the system does not have a service pack
+    // applied.
+    // The build string is string information identifying the
+    // particular build of the system.  The build string is
+    // empty if the system has no particular identifying
+    // information.
+    HRESULT ( STDMETHODCALLTYPE *GetSystemVersion )(
+        void* this,
+        __out PULONG PlatformId,
+        __out PULONG Major,
+        __out PULONG Minor,
+        __out_ecount_opt(ServicePackStringSize) PSTR ServicePackString,
+        __in ULONG ServicePackStringSize,
+        __out_opt PULONG ServicePackStringUsed,
+        __out PULONG ServicePackNumber,
+        __out_ecount_opt(BuildStringSize) PSTR BuildString,
+        __in ULONG BuildStringSize,
+        __out_opt PULONG BuildStringUsed
+        ) ;
+    // Returns the page size for the currently executing
+    // processor context.  The page size may vary between
+    // processor types.
+    HRESULT ( STDMETHODCALLTYPE *GetPageSize )(
+        void* this,
+        __out PULONG Size
+        ) ;
+    // Returns S_OK if the current processor context uses
+    // 64-bit addresses, otherwise S_FALSE.
+    HRESULT ( STDMETHODCALLTYPE *IsPointer64Bit )(
+        void* this,
+        ) ;
+    // Reads the bugcheck data area and returns the
+    // current contents.  This method only works
+    // in kernel debugging sessions.
+    HRESULT ( STDMETHODCALLTYPE *ReadBugCheckData )(
+        void* this,
+        __out PULONG Code,
+        __out PULONG64 Arg1,
+        __out PULONG64 Arg2,
+        __out PULONG64 Arg3,
+        __out PULONG64 Arg4
+        ) ;
+
+    // Query all the processor types supported by
+    // the engine.  This is a complete list and is
+    // not related to the machine running the engine
+    // or the debuggee.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberSupportedProcessorTypes )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSupportedProcessorTypes )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount(Count) PULONG Types
+        ) ;
+    // Returns a full, descriptive name and an
+    // abbreviated name for a processor type.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessorTypeNames )(
+        void* this,
+        __in ULONG Type,
+        __out_ecount_opt(FullNameBufferSize) PSTR FullNameBuffer,
+        __in ULONG FullNameBufferSize,
+        __out_opt PULONG FullNameSize,
+        __out_ecount_opt(AbbrevNameBufferSize) PSTR AbbrevNameBuffer,
+        __in ULONG AbbrevNameBufferSize,
+        __out_opt PULONG AbbrevNameSize
+        ) ;
+
+    // Gets and sets the type of processor to
+    // use when doing things like setting
+    // breakpoints, accessing registers,
+    // getting stack traces and so on.
+    HRESULT ( STDMETHODCALLTYPE *GetEffectiveProcessorType )(
+        void* this,
+        __out PULONG Type
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetEffectiveProcessorType )(
+        void* this,
+        __in ULONG Type
+        ) ;
+
+    // Returns information about whether and how
+    // the debuggee is running.  Status will
+    // be GO if the debuggee is running and
+    // BREAK if it isnt.
+    // If no debuggee exists the status is
+    // NO_DEBUGGEE.
+    // This method is reentrant.
+    HRESULT ( STDMETHODCALLTYPE *GetExecutionStatus )(
+        void* this,
+        __out PULONG Status
+        ) ;
+    // Changes the execution status of the
+    // engine from stopped to running.
+    // Status must be one of the go or step
+    // status values.
+    HRESULT ( STDMETHODCALLTYPE *SetExecutionStatus )(
+        void* this,
+        __in ULONG Status
+        ) ;
+
+    // Controls what code interpretation level the debugger
+    // runs at.  The debugger checks the code level when
+    // deciding whether to step by a source line or
+    // assembly instruction along with other related operations.
+    HRESULT ( STDMETHODCALLTYPE *GetCodeLevel )(
+        void* this,
+        __out PULONG Level
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetCodeLevel )(
+        void* this,
+        __in ULONG Level
+        ) ;
+
+    // Gets and sets engine control flags.
+    // These methods are reentrant.
+    HRESULT ( STDMETHODCALLTYPE *GetEngineOptions )(
+        void* this,
+        __out PULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddEngineOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveEngineOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetEngineOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+
+    // Gets and sets control values for
+    // handling system error events.
+    // If the system error level is less
+    // than or equal to the given levels
+    // the error may be displayed and
+    // the default break for the event
+    // may be set.
+    HRESULT ( STDMETHODCALLTYPE *GetSystemErrorControl )(
+        void* this,
+        __out PULONG OutputLevel,
+        __out PULONG BreakLevel
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSystemErrorControl )(
+        void* this,
+        __in ULONG OutputLevel,
+        __in ULONG BreakLevel
+        ) ;
+
+    // The command processor supports simple
+    // string replacement macros in Evaluate and
+    // Execute.  There are currently ten macro
+    // slots available.  Slots 0-9 map to
+    // the command invocations $u0-$u9.
+    HRESULT ( STDMETHODCALLTYPE *GetTextMacro )(
+        void* this,
+        __in ULONG Slot,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG MacroSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetTextMacro )(
+        void* this,
+        __in ULONG Slot,
+        __in PCSTR Macro
+        ) ;
+
+    // Controls the default number radix used
+    // in expressions and commands.
+    HRESULT ( STDMETHODCALLTYPE *GetRadix )(
+        void* this,
+        __out PULONG Radix
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetRadix )(
+        void* this,
+        __in ULONG Radix
+        ) ;
+
+    // Evaluates the given expression string and
+    // returns the resulting value.
+    // If DesiredType is DEBUG_VALUE_INVALID then
+    // the natural type is used.
+    // RemainderIndex, if provided, is set to the index
+    // of the first character in the input string that was
+    // not used when evaluating the expression.
+    HRESULT ( STDMETHODCALLTYPE *Evaluate )(
+        void* this,
+        __in PCSTR Expression,
+        __in ULONG DesiredType,
+        __out PDEBUG_VALUE Value,
+        __out_opt PULONG RemainderIndex
+        ) ;
+    // Attempts to convert the input value to a value
+    // of the requested type in the output value.
+    // Conversions can fail if no conversion exists.
+    // Successful conversions may be lossy.
+    HRESULT ( STDMETHODCALLTYPE *CoerceValue )(
+        void* this,
+        __in PDEBUG_VALUE In,
+        __in ULONG OutType,
+        __out PDEBUG_VALUE Out
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *CoerceValues )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount(Count) PDEBUG_VALUE In,
+        __in_ecount(Count) PULONG OutTypes,
+        __out_ecount(Count) PDEBUG_VALUE Out
+        ) ;
+
+    // Executes the given command string.
+    // If the string has multiple commands
+    // Execute will not return until all
+    // of them have been executed.  If this
+    // requires waiting for the debuggee to
+    // execute an internal wait will be done
+    // so Execute can take an arbitrary amount
+    // of time.
+    HRESULT ( STDMETHODCALLTYPE *Execute )(
+        void* this,
+        __in ULONG OutputControl,
+        __in PCSTR Command,
+        __in ULONG Flags
+        ) ;
+    // Executes the given command file by
+    // reading a line at a time and processing
+    // it with Execute.
+    HRESULT ( STDMETHODCALLTYPE *ExecuteCommandFile )(
+        void* this,
+        __in ULONG OutputControl,
+        __in PCSTR CommandFile,
+        __in ULONG Flags
+        ) ;
+
+    // Breakpoint interfaces are described
+    // elsewhere in this section.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberBreakpoints )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    // It is possible for this retrieval function to
+    // fail even with an index within the number of
+    // existing breakpoints if the breakpoint is
+    // a private breakpoint.
+    HRESULT ( STDMETHODCALLTYPE *GetBreakpointByIndex )(
+        void* this,
+        __in ULONG Index,
+        __out PDEBUG_BREAKPOINT* Bp
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetBreakpointById )(
+        void* this,
+        __in ULONG Id,
+        __out PDEBUG_BREAKPOINT* Bp
+        ) ;
+    // If Ids is non-NULL the Count breakpoints
+    // referred to in the Ids array are returned,
+    // otherwise breakpoints from index Start to
+    // Start + Count  1 are returned.
+    HRESULT ( STDMETHODCALLTYPE *GetBreakpointParameters )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Ids,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_BREAKPOINT_PARAMETERS Params
+        ) ;
+    // Breakpoints are created empty and disabled.
+    // When their parameters have been set they
+    // should be enabled by setting the ENABLE flag.
+    // If DesiredId is DEBUG_ANY_ID then the
+    // engine picks an unused ID.  If DesiredId
+    // is any other number the engine attempts
+    // to use the given ID for the breakpoint.
+    // If another breakpoint exists with that ID
+    // the call will fail.
+    HRESULT ( STDMETHODCALLTYPE *AddBreakpoint )(
+        void* this,
+        __in ULONG Type,
+        __in ULONG DesiredId,
+        __out PDEBUG_BREAKPOINT* Bp
+        ) ;
+    // Breakpoint interface is invalid after this call.
+    HRESULT ( STDMETHODCALLTYPE *RemoveBreakpoint )(
+        void* this,
+        __in PDEBUG_BREAKPOINT Bp
+        ) ;
+
+    // Control and use extension DLLs.
+    HRESULT ( STDMETHODCALLTYPE *AddExtension )(
+        void* this,
+        __in PCSTR Path,
+        __in ULONG Flags,
+        __out PULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveExtension )(
+        void* this,
+        __in ULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExtensionByPath )(
+        void* this,
+        __in PCSTR Path,
+        __out PULONG64 Handle
+        ) ;
+    // If Handle is zero the extension
+    // chain is walked searching for the
+    // function.
+    HRESULT ( STDMETHODCALLTYPE *CallExtension )(
+        void* this,
+        __in ULONG64 Handle,
+        __in PCSTR Function,
+        __in_opt PCSTR Arguments
+        ) ;
+    // GetExtensionFunction works like
+    // GetProcAddress on extension DLLs
+    // to allow raw function-call-level
+    // interaction with extension DLLs.
+    // Such functions do not need to
+    // follow the standard extension prototype
+    // if they are not going to be called
+    // through the text extension interface.
+    // This function cannot be called remotely.
+    HRESULT ( STDMETHODCALLTYPE *GetExtensionFunction )(
+        void* this,
+        __in ULONG64 Handle,
+        __in PCSTR FuncName,
+        __out FARPROC* Function
+        ) ;
+    // These methods return alternate
+    // extension interfaces in order to allow
+    // interface-style extension DLLs to mix in
+    // older extension calls.
+    // Structure sizes must be initialized before
+    // the call.
+    // These methods cannot be called remotely.
+    HRESULT ( STDMETHODCALLTYPE *GetWindbgExtensionApis32 )(
+        void* this,
+        __inout PWINDBG_EXTENSION_APIS32 Api
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetWindbgExtensionApis64 )(
+        void* this,
+        __inout PWINDBG_EXTENSION_APIS64 Api
+        ) ;
+
+    // The engine provides a simple mechanism
+    // to filter common events.  Arbitrarily complicated
+    // filtering can be done by registering event callbacks
+    // but simple event filtering only requires
+    // setting the options of one of the predefined
+    // event filters.
+    // Simple event filters are either for specific
+    // events and therefore have an enumerant or
+    // they are for an exception and are based on
+    // the exceptions code.  Exception filters
+    // are further divided into exceptions specially
+    // handled by the engine, which is a fixed set,
+    // and arbitrary exceptions.
+    // All three groups of filters are indexed together
+    // with the specific filters first, then the specific
+    // exception filters and finally the arbitrary
+    // exception filters.
+    // The first specific exception is the default
+    // exception.  If an exception event occurs for
+    // an exception without settings the default
+    // exception settings are used.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberEventFilters )(
+        void* this,
+        __out PULONG SpecificEvents,
+        __out PULONG SpecificExceptions,
+        __out PULONG ArbitraryExceptions
+        ) ;
+    // Some filters have descriptive text associated with them.
+    HRESULT ( STDMETHODCALLTYPE *GetEventFilterText )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG TextSize
+        ) ;
+    // All filters support executing a command when the
+    // event occurs.
+    HRESULT ( STDMETHODCALLTYPE *GetEventFilterCommand )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG CommandSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetEventFilterCommand )(
+        void* this,
+        __in ULONG Index,
+        __in PCSTR Command
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSpecificFilterParameters )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount(Count) PDEBUG_SPECIFIC_FILTER_PARAMETERS Params
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSpecificFilterParameters )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __in_ecount(Count) PDEBUG_SPECIFIC_FILTER_PARAMETERS Params
+        ) ;
+    // Some specific filters have arguments to further
+    // qualify their operation.
+    HRESULT ( STDMETHODCALLTYPE *GetSpecificFilterArgument )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ArgumentSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSpecificFilterArgument )(
+        void* this,
+        __in ULONG Index,
+        __in PCSTR Argument
+        ) ;
+    // If Codes is non-NULL Start is ignored.
+    HRESULT ( STDMETHODCALLTYPE *GetExceptionFilterParameters )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Codes,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_EXCEPTION_FILTER_PARAMETERS Params
+        ) ;
+    // The codes in the parameter data control the application
+    // of the parameter data.  If a code is not already in
+    // the set of filters it is added.  If the ExecutionOption
+    // for a code is REMOVE then the filter is removed.
+    // Specific exception filters cannot be removed.
+    HRESULT ( STDMETHODCALLTYPE *SetExceptionFilterParameters )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount(Count) PDEBUG_EXCEPTION_FILTER_PARAMETERS Params
+        ) ;
+    // Exception filters support an additional command for
+    // second-chance events.
+    HRESULT ( STDMETHODCALLTYPE *GetExceptionFilterSecondCommand )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG CommandSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetExceptionFilterSecondCommand )(
+        void* this,
+        __in ULONG Index,
+        __in PCSTR Command
+        ) ;
+
+    // Yields processing to the engine until
+    // an event occurs.  This method may
+    // only be called by the thread that started
+    // the debug session.
+    // When an event occurs the engine carries
+    // out all event processing such as calling
+    // callbacks.
+    // If the callbacks indicate that execution should
+    // break the wait will return, otherwise it
+    // goes back to waiting for a new event.
+    // If the timeout expires, S_FALSE is returned.
+    // The timeout is not currently supported for
+    // kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *WaitForEvent )(
+        void* this,
+        __in ULONG Flags,
+        __in ULONG Timeout
+        ) ;
+
+    // Retrieves information about the last event that occurred.
+    // EventType is one of the event callback mask bits.
+    // ExtraInformation contains additional event-specific
+    // information.  Not all events have additional information.
+    HRESULT ( STDMETHODCALLTYPE *GetLastEventInformation )(
+        void* this,
+        __out PULONG Type,
+        __out PULONG ProcessId,
+        __out PULONG ThreadId,
+        __out_bcount_opt(ExtraInformationSize) PVOID ExtraInformation,
+        __in ULONG ExtraInformationSize,
+        __out_opt PULONG ExtraInformationUsed,
+        __out_ecount_opt(DescriptionSize) PSTR Description,
+        __in ULONG DescriptionSize,
+        __out_opt PULONG DescriptionUsed
+        ) ;
+
+    // IDebugControl2.
+
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentTimeDate )(
+        void* this,
+        __out PULONG TimeDate
+        ) ;
+    // Retrieves the number of seconds since the
+    // machine started running.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentSystemUpTime )(
+        void* this,
+        __out PULONG UpTime
+        ) ;
+
+    // If the current session is a dump session,
+    // retrieves any extended format information.
+    HRESULT ( STDMETHODCALLTYPE *GetDumpFormatFlags )(
+        void* this,
+        __out PULONG FormatFlags
+        ) ;
+
+    // The debugger has been enhanced to allow
+    // arbitrary text replacements in addition
+    // to the simple $u0-$u9 text macros.
+    // Text replacement takes a given source
+    // text in commands and converts it to the
+    // given destination text.  Replacements
+    // are named by their source text so that
+    // only one replacement for a source text
+    // string can exist.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberTextReplacements )(
+        void* this,
+        __out PULONG NumRepl
+        ) ;
+    // If SrcText is non-NULL the replacement
+    // is looked up by source text, otherwise
+    // Index is used to get the Nth replacement.
+    HRESULT ( STDMETHODCALLTYPE *GetTextReplacement )(
+        void* this,
+        __in_opt PCSTR SrcText,
+        __in ULONG Index,
+        __out_ecount_opt(SrcBufferSize) PSTR SrcBuffer,
+        __in ULONG SrcBufferSize,
+        __out_opt PULONG SrcSize,
+        __out_ecount_opt(DstBufferSize) PSTR DstBuffer,
+        __in ULONG DstBufferSize,
+        __out_opt PULONG DstSize
+        ) ;
+    // Setting the destination text to
+    // NULL removes the alias.
+    HRESULT ( STDMETHODCALLTYPE *SetTextReplacement )(
+        void* this,
+        __in PCSTR SrcText,
+        __in_opt PCSTR DstText
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveTextReplacements )(
+        void* this,
+        ) ;
+    // Outputs the complete list of current
+    // replacements.
+    HRESULT ( STDMETHODCALLTYPE *OutputTextReplacements )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags
+        ) ;
+
+    // IDebugControl3.
+
+    // Control options for assembly and disassembly.
+    HRESULT ( STDMETHODCALLTYPE *GetAssemblyOptions )(
+        void* this,
+        __out PULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddAssemblyOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveAssemblyOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetAssemblyOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+
+    // Control the expression syntax.
+    HRESULT ( STDMETHODCALLTYPE *GetExpressionSyntax )(
+        void* this,
+        __out PULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetExpressionSyntax )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+    // Look up a syntax by its abbreviated
+    // name and set it.
+    HRESULT ( STDMETHODCALLTYPE *SetExpressionSyntaxByName )(
+        void* this,
+        __in PCSTR AbbrevName
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetNumberExpressionSyntaxes )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExpressionSyntaxNames )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(FullNameBufferSize) PSTR FullNameBuffer,
+        __in ULONG FullNameBufferSize,
+        __out_opt PULONG FullNameSize,
+        __out_ecount_opt(AbbrevNameBufferSize) PSTR AbbrevNameBuffer,
+        __in ULONG AbbrevNameBufferSize,
+        __out_opt PULONG AbbrevNameSize
+        ) ;
+
+    //
+    // Some debug sessions have only a single
+    // possible event, such as a snapshot dump
+    // file; some have dynamic events, such as
+    // a live debug session; and others may have
+    // multiple events, such as a dump file that
+    // contains snapshots from different points
+    // in time.  The following methods allow
+    // discovery and selection of the available
+    // events for a session.
+    // Sessions with one or more static events
+    // will be able to report all of the events
+    // when queried.  Sessions with dynamic events
+    // will only report a single event representing
+    // the current event.
+    // Switching events constitutes execution and
+    // changing the current event will alter the
+    // execution status to a running state, after
+    // which WaitForEvent must be used to process
+    // the selected event.
+    //
+
+    // GetNumberEvents returns S_OK if this is the
+    // complete set of events possible, such as for
+    // a static session; or S_FALSE if other events
+    // may be possible, such as for a dynamic session.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberEvents )(
+        void* this,
+        __out PULONG Events
+        ) ;
+    // Sessions may have descriptive information for
+    // the various events available.  The amount of
+    // information varies according to the specific
+    // session and data.
+    HRESULT ( STDMETHODCALLTYPE *GetEventIndexDescription )(
+        void* this,
+        __in ULONG Index,
+        __in ULONG Which,
+        __in_opt PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DescSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentEventIndex )(
+        void* this,
+        __out PULONG Index
+        ) ;
+    // SetNextEventIndex works like seek in that
+    // it can set an absolute or relative index.
+    // SetNextEventIndex works similarly to SetExecutionStatus
+    // by putting the session into a running state, after
+    // which the caller must call WaitForEvent.  The
+    // current event index only changes when WaitForEvent
+    // is called.
+    HRESULT ( STDMETHODCALLTYPE *SetNextEventIndex )(
+        void* this,
+        __in ULONG Relation,
+        __in ULONG Value,
+        __out PULONG NextIndex
+        ) ;
+
+    // IDebugControl4.
+
+    HRESULT ( STDMETHODCALLTYPE *GetLogFileWide )(
+        void* this,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FileSize,
+        __out PBOOL Append
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OpenLogFileWide )(
+        void* this,
+        __in PCWSTR File,
+        __in BOOL Append
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *InputWide )(
+        void* this,
+        __out_ecount(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG InputSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReturnInputWide )(
+        void* this,
+        __in PCWSTR Buffer
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *OutputWide )(
+        void* this,
+        __in ULONG Mask,
+        __in PCWSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputVaListWide )(
+        void* this,
+        __in ULONG Mask,
+        __in PCWSTR Format,
+        __in va_list Args
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ControlledOutputWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Mask,
+        __in PCWSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ControlledOutputVaListWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Mask,
+        __in PCWSTR Format,
+        __in va_list Args
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *OutputPromptWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_opt PCWSTR Format,
+        ...
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputPromptVaListWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_opt PCWSTR Format,
+        __in va_list Args
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetPromptTextWide )(
+        void* this,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG TextSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *AssembleWide )(
+        void* this,
+        __in ULONG64 Offset,
+        __in PCWSTR Instr,
+        __out PULONG64 EndOffset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *DisassembleWide )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG Flags,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DisassemblySize,
+        __out PULONG64 EndOffset
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetProcessorTypeNamesWide )(
+        void* this,
+        __in ULONG Type,
+        __out_ecount_opt(FullNameBufferSize) PWSTR FullNameBuffer,
+        __in ULONG FullNameBufferSize,
+        __out_opt PULONG FullNameSize,
+        __out_ecount_opt(AbbrevNameBufferSize) PWSTR AbbrevNameBuffer,
+        __in ULONG AbbrevNameBufferSize,
+        __out_opt PULONG AbbrevNameSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetTextMacroWide )(
+        void* this,
+        __in ULONG Slot,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG MacroSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetTextMacroWide )(
+        void* this,
+        __in ULONG Slot,
+        __in PCWSTR Macro
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *EvaluateWide )(
+        void* this,
+        __in PCWSTR Expression,
+        __in ULONG DesiredType,
+        __out PDEBUG_VALUE Value,
+        __out_opt PULONG RemainderIndex
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *ExecuteWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in PCWSTR Command,
+        __in ULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ExecuteCommandFileWide )(
+        void* this,
+        __in ULONG OutputControl,
+        __in PCWSTR CommandFile,
+        __in ULONG Flags
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetBreakpointByIndex2 )(
+        void* this,
+        __in ULONG Index,
+        __out PDEBUG_BREAKPOINT2* Bp
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetBreakpointById2 )(
+        void* this,
+        __in ULONG Id,
+        __out PDEBUG_BREAKPOINT2* Bp
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddBreakpoint2 )(
+        void* this,
+        __in ULONG Type,
+        __in ULONG DesiredId,
+        __out PDEBUG_BREAKPOINT2* Bp
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveBreakpoint2 )(
+        void* this,
+        __in PDEBUG_BREAKPOINT2 Bp
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *AddExtensionWide )(
+        void* this,
+        __in PCWSTR Path,
+        __in ULONG Flags,
+        __out PULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExtensionByPathWide )(
+        void* this,
+        __in PCWSTR Path,
+        __out PULONG64 Handle
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *CallExtensionWide )(
+        void* this,
+        __in ULONG64 Handle,
+        __in PCWSTR Function,
+        __in_opt PCWSTR Arguments
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExtensionFunctionWide )(
+        void* this,
+        __in ULONG64 Handle,
+        __in PCWSTR FuncName,
+        __out FARPROC* Function
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetEventFilterTextWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG TextSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetEventFilterCommandWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG CommandSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetEventFilterCommandWide )(
+        void* this,
+        __in ULONG Index,
+        __in PCWSTR Command
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSpecificFilterArgumentWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ArgumentSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSpecificFilterArgumentWide )(
+        void* this,
+        __in ULONG Index,
+        __in PCWSTR Argument
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExceptionFilterSecondCommandWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG CommandSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetExceptionFilterSecondCommandWide )(
+        void* this,
+        __in ULONG Index,
+        __in PCWSTR Command
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetLastEventInformationWide )(
+        void* this,
+        __out PULONG Type,
+        __out PULONG ProcessId,
+        __out PULONG ThreadId,
+        __out_bcount_opt(ExtraInformationSize) PVOID ExtraInformation,
+        __in ULONG ExtraInformationSize,
+        __out_opt PULONG ExtraInformationUsed,
+        __out_ecount_opt(DescriptionSize) PWSTR Description,
+        __in ULONG DescriptionSize,
+        __out_opt PULONG DescriptionUsed
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetTextReplacementWide )(
+        void* this,
+        __in_opt PCWSTR SrcText,
+        __in ULONG Index,
+        __out_ecount_opt(SrcBufferSize) PWSTR SrcBuffer,
+        __in ULONG SrcBufferSize,
+        __out_opt PULONG SrcSize,
+        __out_ecount_opt(DstBufferSize) PWSTR DstBuffer,
+        __in ULONG DstBufferSize,
+        __out_opt PULONG DstSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetTextReplacementWide )(
+        void* this,
+        __in PCWSTR SrcText,
+        __in_opt PCWSTR DstText
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *SetExpressionSyntaxByNameWide )(
+        void* this,
+        __in PCWSTR AbbrevName
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetExpressionSyntaxNamesWide )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(FullNameBufferSize) PWSTR FullNameBuffer,
+        __in ULONG FullNameBufferSize,
+        __out_opt PULONG FullNameSize,
+        __out_ecount_opt(AbbrevNameBufferSize) PWSTR AbbrevNameBuffer,
+        __in ULONG AbbrevNameBufferSize,
+        __out_opt PULONG AbbrevNameSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetEventIndexDescriptionWide )(
+        void* this,
+        __in ULONG Index,
+        __in ULONG Which,
+        __in_opt PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DescSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetLogFile2 )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FileSize,
+        __out PULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OpenLogFile2 )(
+        void* this,
+        __in PCSTR File,
+        __in ULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetLogFile2Wide )(
+        void* this,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FileSize,
+        __out PULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OpenLogFile2Wide )(
+        void* this,
+        __in PCWSTR File,
+        __in ULONG Flags
+        ) ;
+
+    // GetSystemVersion always returns the kd
+    // major/minor version numbers, which are
+    // different than the Win32 version numbers.
+    // GetSystemVersionValues can be used
+    // to determine the Win32 version values.
+    HRESULT ( STDMETHODCALLTYPE *GetSystemVersionValues )(
+        void* this,
+        __out PULONG PlatformId,
+        __out PULONG Win32Major,
+        __out PULONG Win32Minor,
+        __out_opt PULONG KdMajor,
+        __out_opt PULONG KdMinor
+        ) ;
+    // Strings are selected with DEBUG_SYSVERSTR_*.
+    HRESULT ( STDMETHODCALLTYPE *GetSystemVersionString )(
+        void* this,
+        __in ULONG Which,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSystemVersionStringWide )(
+        void* this,
+        __in ULONG Which,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG StringSize
+        ) ;
+
+    // Stack tracing with a full initial context
+    // and full context return for each frame.
+    // The FrameContextsSize parameter is the total
+    // byte size of FrameContexts.  FrameContextsEntrySize
+    // gives the byte size of each entry in
+    // FrameContexts.
+    HRESULT ( STDMETHODCALLTYPE *GetContextStackTrace )(
+        void* this,
+        __in_bcount_opt(StartContextSize) PVOID StartContext,
+        __in ULONG StartContextSize,
+        __out_ecount_opt(FramesSize) PDEBUG_STACK_FRAME Frames,
+        __in ULONG FramesSize,
+        __out_bcount_opt(FrameContextsSize) PVOID FrameContexts,
+        __in ULONG FrameContextsSize,
+        __in ULONG FrameContextsEntrySize,
+        __out_opt PULONG FramesFilled
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputContextStackTrace )(
+        void* this,
+        __in ULONG OutputControl,
+        __in_ecount(FramesSize) PDEBUG_STACK_FRAME Frames,
+        __in ULONG FramesSize,
+        __in_bcount(FrameContextsSize) PVOID FrameContexts,
+        __in ULONG FrameContextsSize,
+        __in ULONG FrameContextsEntrySize,
+        __in ULONG Flags
+        ) ;
+
+    // Some targets, such as user-mode minidump files,
+    // have separate "event of interest" information
+    // stored within them.  This method allows
+    // access to that information.
+    HRESULT ( STDMETHODCALLTYPE *GetStoredEventInformation )(
+        void* this,
+        __out PULONG Type,
+        __out PULONG ProcessId,
+        __out PULONG ThreadId,
+        __out_bcount_opt(ContextSize) PVOID Context,
+        __in ULONG ContextSize,
+        __out_opt PULONG ContextUsed,
+        __out_bcount_opt(ExtraInformationSize) PVOID ExtraInformation,
+        __in ULONG ExtraInformationSize,
+        __out_opt PULONG ExtraInformationUsed
+        ) ;
+
+    // Managed debugging support relies on debugging
+    // functionality provided by the Common Language Runtime.
+    // This method provides feedback on the engine's
+    // use of the runtime debugging APIs.
+    HRESULT ( STDMETHODCALLTYPE *GetManagedStatus )(
+        void* this,
+        __out_opt PULONG Flags,
+        __in ULONG WhichString,
+        __out_ecount_opt(StringSize) PSTR String,
+        __in ULONG StringSize,
+        __out_opt PULONG StringNeeded
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetManagedStatusWide )(
+        void* this,
+        __out_opt PULONG Flags,
+        __in ULONG WhichString,
+        __out_ecount_opt(StringSize) PWSTR String,
+        __in ULONG StringSize,
+        __out_opt PULONG StringNeeded
+        ) ;
+    // Clears and reinitializes the engine's
+    // managed code debugging support.
+    HRESULT ( STDMETHODCALLTYPE *ResetManagedStatus )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+            END_INTERFACE
+        } IDebugControl4Vtbl, *PDEBUG_CONTROL4;

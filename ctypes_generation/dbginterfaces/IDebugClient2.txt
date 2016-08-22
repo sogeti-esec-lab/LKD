@@ -1,0 +1,457 @@
+@IID: EDBED635-372E-4DAB-BBFE-ED0D2F63BE81
+typedef struct IDebugClient2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugClient.
+
+    // The following set of methods start
+    // the different kinds of debuggees.
+
+    // Begins a debug session using the kernel
+    // debugging protocol.  This method selects
+    // the protocol as the debuggee communication
+    // mechanism but does not initiate the communication
+    // itself.
+    HRESULT ( STDMETHODCALLTYPE *AttachKernel )(
+        void* this,
+        __in ULONG Flags,
+        __in_opt PCSTR ConnectOptions
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetKernelConnectionOptions )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG OptionsSize
+        ) ;
+    // Updates the connection options for a live
+    // kernel connection.  This can only be used
+    // to modify parameters for the connection, not
+    // to switch to a completely different kind of
+    // connection.
+    // This method is reentrant.
+    HRESULT ( STDMETHODCALLTYPE *SetKernelConnectionOptions )(
+        void* this,
+        __in PCSTR Options
+        ) ;
+
+    // Starts a process server for remote
+    // user-mode process control.
+    // The local process server is server zero.
+    HRESULT ( STDMETHODCALLTYPE *StartProcessServer )(
+        void* this,
+        __in ULONG Flags,
+        __in PCSTR Options,
+        __in_opt __reserved PVOID Reserved
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ConnectProcessServer )(
+        void* this,
+        __in PCSTR RemoteOptions,
+        __out PULONG64 Server
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *DisconnectProcessServer )(
+        void* this,
+        __in ULONG64 Server
+        ) ;
+
+    // Enumerates and describes processes
+    // accessible through the given process server.
+    HRESULT ( STDMETHODCALLTYPE *GetRunningProcessSystemIds )(
+        void* this,
+        __in ULONG64 Server,
+        __out_ecount_opt(Count) PULONG Ids,
+        __in ULONG Count,
+        __out_opt PULONG ActualCount
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetRunningProcessSystemIdByExecutableName )(
+        void* this,
+        __in ULONG64 Server,
+        __in PCSTR ExeName,
+        __in ULONG Flags,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetRunningProcessDescription )(
+        void* this,
+        __in ULONG64 Server,
+        __in ULONG SystemId,
+        __in ULONG Flags,
+        __out_ecount_opt(ExeNameSize) PSTR ExeName,
+        __in ULONG ExeNameSize,
+        __out_opt PULONG ActualExeNameSize,
+        __out_ecount_opt(DescriptionSize) PSTR Description,
+        __in ULONG DescriptionSize,
+        __out_opt PULONG ActualDescriptionSize
+        ) ;
+
+    // Attaches to a running user-mode process.
+    HRESULT ( STDMETHODCALLTYPE *AttachProcess )(
+        void* this,
+        __in ULONG64 Server,
+        __in ULONG ProcessId,
+        __in ULONG AttachFlags
+        ) ;
+    // Creates a new user-mode process for debugging.
+    // CreateFlags are as given to Win32s CreateProcess.
+    // One of DEBUG_PROCESS or DEBUG_ONLY_void* this,PROCESS
+    // must be specified.
+    HRESULT ( STDMETHODCALLTYPE *CreateProcess )(
+        void* this,
+        __in ULONG64 Server,
+        __in PSTR CommandLine,
+        __in ULONG CreateFlags
+        ) ;
+    // Creates or attaches to a user-mode process, or both.
+    // If CommandLine is NULL this method operates as
+    // AttachProcess does.  If ProcessId is zero it
+    // operates as CreateProcess does.  If CommandLine is
+    // non-NULL and ProcessId is non-zero the method first
+    // starts a process with the given information but
+    // in a suspended state.  The engine then attaches to
+    // the indicated process.  Once the attach is successful
+    // the suspended process is resumed.  This provides
+    // synchronization between the new process and the
+    // attachment.
+    HRESULT ( STDMETHODCALLTYPE *CreateProcessAndAttach )(
+        void* this,
+        __in ULONG64 Server,
+        __in_opt PSTR CommandLine,
+        __in ULONG CreateFlags,
+        __in ULONG ProcessId,
+        __in ULONG AttachFlags
+        ) ;
+    // Gets and sets process control flags.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessOptions )(
+        void* this,
+        __out PULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddProcessOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveProcessOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetProcessOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+
+    // Opens any kind of user- or kernel-mode dump file
+    // and begins a debug session with the information
+    // contained within it.
+    HRESULT ( STDMETHODCALLTYPE *OpenDumpFile )(
+        void* this,
+        __in PCSTR DumpFile
+        ) ;
+    // Writes a dump file from the current session information.
+    // The kind of dump file written is determined by the
+    // kind of session and the type qualifier given.
+    // For example, if the current session is a kernel
+    // debug session (DEBUG_CLASS_KERNEL) and the qualifier
+    // is DEBUG_DUMP_SMALL a small kernel dump will be written.
+    HRESULT ( STDMETHODCALLTYPE *WriteDumpFile )(
+        void* this,
+        __in PCSTR DumpFile,
+        __in ULONG Qualifier
+        ) ;
+
+    // Indicates that a remote client is ready to
+    // begin participating in the current session.
+    // HistoryLimit gives a character limit on
+    // the amount of output history to be sent.
+    HRESULT ( STDMETHODCALLTYPE *ConnectSession )(
+        void* this,
+        __in ULONG Flags,
+        __in ULONG HistoryLimit
+        ) ;
+    // Indicates that the engine should start accepting
+    // remote connections. Options specifies connection types
+    // and their parameters.  Supported strings are:
+    //    npipe:Pipe=<Pipe name>
+    //    tcp:Port=<IP port>
+    HRESULT ( STDMETHODCALLTYPE *StartServer )(
+        void* this,
+        __in PCSTR Options
+        ) ;
+    // List the servers running on the given machine.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputServers )(
+        void* this,
+        __in ULONG OutputControl,
+        __in PCSTR Machine,
+        __in ULONG Flags
+        ) ;
+
+    // Attempts to terminate all processes in the debuggers list.
+    HRESULT ( STDMETHODCALLTYPE *TerminateProcesses )(
+        void* this,
+        ) ;
+    // Attempts to detach from all processes in the debuggers list.
+    // This requires OS support for debugger detach.
+    HRESULT ( STDMETHODCALLTYPE *DetachProcesses )(
+        void* this,
+        ) ;
+    // Stops the current debug session.  If a process
+    // was created or attached an active EndSession can
+    // terminate or detach from it.
+    // If a kernel connection was opened it will be closed but the
+    // target machine is otherwise unaffected.
+    HRESULT ( STDMETHODCALLTYPE *EndSession )(
+        void* this,
+        __in ULONG Flags
+        ) ;
+    // If a process was started and ran to completion
+    // this method can be used to retrieve its exit code.
+    HRESULT ( STDMETHODCALLTYPE *GetExitCode )(
+        void* this,
+        __out PULONG Code
+        ) ;
+
+    // Client event callbacks are called on the thread
+    // of the client.  In order to give thread
+    // execution to the engine for callbacks all
+    // client threads should call DispatchCallbacks
+    // when they are idle.  Callbacks are only
+    // received when a thread calls DispatchCallbacks
+    // or WaitForEvent.  WaitForEvent can only be
+    // called by the thread that started the debug
+    // session so all other client threads should
+    // call DispatchCallbacks when possible.
+    // DispatchCallbacks returns when ExitDispatch is used
+    // to interrupt dispatch or when the timeout expires.
+    // DispatchCallbacks dispatches callbacks for all
+    // clients associated with the thread calling
+    // DispatchCallbacks.
+    // DispatchCallbacks returns S_FALSE when the
+    // timeout expires.
+    HRESULT ( STDMETHODCALLTYPE *DispatchCallbacks )(
+        void* this,
+        __in ULONG Timeout
+        ) ;
+    // ExitDispatch can be used to interrupt callback
+    // dispatch when a client thread is needed by the
+    // client.  This method is reentrant and can
+    // be called from any thread.
+    HRESULT ( STDMETHODCALLTYPE *ExitDispatch )(
+        void* this,
+        __in PDEBUG_CLIENT Client
+        ) ;
+
+    // Clients are specific to the thread that
+    // created them.  Calls from other threads
+    // fail immediately.  The CreateClient method
+    // is a notable exception; it allows creation
+    // of a new client for a new thread.
+    HRESULT ( STDMETHODCALLTYPE *CreateClient )(
+        void* this,
+        __out PDEBUG_CLIENT* Client
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetInputCallbacks )(
+        void* this,
+        __out PDEBUG_INPUT_CALLBACKS* Callbacks
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetInputCallbacks )(
+        void* this,
+        __in_opt PDEBUG_INPUT_CALLBACKS Callbacks
+        ) ;
+
+    // Output callback interfaces are described separately.
+    HRESULT ( STDMETHODCALLTYPE *GetOutputCallbacks )(
+        void* this,
+        __out PDEBUG_OUTPUT_CALLBACKS* Callbacks
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOutputCallbacks )(
+        void* this,
+        __in_opt PDEBUG_OUTPUT_CALLBACKS Callbacks
+        ) ;
+    // Output flags provide control over
+    // the distribution of output among clients.
+    // Output masks select which output streams
+    // should be sent to the output callbacks.
+    // Only Output calls with a mask that
+    // contains one of the output mask bits
+    // will be sent to the output callbacks.
+    // These methods are reentrant.
+    // If such access is not synchronized
+    // disruptions in output may occur.
+    HRESULT ( STDMETHODCALLTYPE *GetOutputMask )(
+        void* this,
+        __out PULONG Mask
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOutputMask )(
+        void* this,
+        __in ULONG Mask
+        ) ;
+    // These methods allow access to another clients
+    // output mask.  They are necessary for changing
+    // a clients output mask when it is
+    // waiting for events.  These methods are reentrant
+    // and can be called from any thread.
+    HRESULT ( STDMETHODCALLTYPE *GetOtherOutputMask )(
+        void* this,
+        __in PDEBUG_CLIENT Client,
+        __out PULONG Mask
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOtherOutputMask )(
+        void* this,
+        __in PDEBUG_CLIENT Client,
+        __in ULONG Mask
+        ) ;
+    // Control the width of an output line for
+    // commands which produce formatted output.
+    // This setting is just a suggestion.
+    HRESULT ( STDMETHODCALLTYPE *GetOutputWidth )(
+        void* this,
+        __out PULONG Columns
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOutputWidth )(
+        void* this,
+        __in ULONG Columns
+        ) ;
+    // Some of the engines output commands produce
+    // multiple lines of output.  A prefix can be
+    // set that the engine will automatically output
+    // for each line in that case, allowing a caller
+    // to control indentation or identifying marks.
+    // This is not a general setting for any output
+    // with a newline in it.  Methods which use
+    // the line prefix are marked in their documentation.
+    HRESULT ( STDMETHODCALLTYPE *GetOutputLinePrefix )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG PrefixSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetOutputLinePrefix )(
+        void* this,
+        __in_opt PCSTR Prefix
+        ) ;
+
+    // Returns a string describing the machine
+    // and user this client represents.  The
+    // specific content of the string varies
+    // with operating system.  If the client is
+    // remotely connected some network information
+    // may also be present.
+    HRESULT ( STDMETHODCALLTYPE *GetIdentity )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG IdentitySize
+        ) ;
+    // Format is a printf-like format string
+    // with one %s where the identity string should go.
+    HRESULT ( STDMETHODCALLTYPE *OutputIdentity )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags,
+        __in PCSTR Format
+        ) ;
+
+    // Event callbacks allow a client to
+    // receive notification about changes
+    // during the debug session.
+    HRESULT ( STDMETHODCALLTYPE *GetEventCallbacks )(
+        void* this,
+        __out PDEBUG_EVENT_CALLBACKS* Callbacks
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetEventCallbacks )(
+        void* this,
+        __in_opt PDEBUG_EVENT_CALLBACKS Callbacks
+        ) ;
+
+    // The engine sometimes merges compatible callback
+    // requests to reduce callback overhead.  This is
+    // most noticeable with output as small pieces of
+    // output are collected into larger groups to
+    // reduce the overall number of output callback calls.
+    // A client can use this method to force all pending
+    // callbacks to be delivered.  This is rarely necessary.
+    HRESULT ( STDMETHODCALLTYPE *FlushCallbacks )(
+        void* this,
+        ) ;
+
+    // IDebugClient2.
+
+    // Functions similarly to WriteDumpFile with
+    // the addition of the ability to specify
+    // per-dump-format write control flags.
+    // Comment is not supported in all formats.
+    HRESULT ( STDMETHODCALLTYPE *WriteDumpFile2 )(
+        void* this,
+        __in PCSTR DumpFile,
+        __in ULONG Qualifier,
+        __in ULONG FormatFlags,
+        __in_opt PCSTR Comment
+        ) ;
+    // Registers additional files of supporting information
+    // for a dump file open.  This method must be called
+    // before OpenDumpFile is called.
+    // The files registered may be opened at the time
+    // this method is called but generally will not
+    // be used until OpenDumpFile is called.
+    HRESULT ( STDMETHODCALLTYPE *AddDumpInformationFile )(
+        void* this,
+        __in PCSTR InfoFile,
+        __in ULONG Type
+        ) ;
+
+    // Requests that the remote process server shut down.
+    HRESULT ( STDMETHODCALLTYPE *EndProcessServer )(
+        void* this,
+        __in ULONG64 Server
+        ) ;
+    // Waits for a started process server to
+    // exit.  Allows an application running a
+    // process server to monitor the process
+    // server so that it can tell when a remote
+    // client has asked for it to exit.
+    // Returns S_OK if the process server has
+    // shut down and S_FALSE for a timeout.
+    HRESULT ( STDMETHODCALLTYPE *WaitForProcessServerEnd )(
+        void* this,
+        __in ULONG Timeout
+        ) ;
+
+    // Returns S_OK if the system is configured
+    // to allow kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *IsKernelDebuggerEnabled )(
+        void* this,
+        ) ;
+
+    // Attempts to terminate the current process.
+    // Exit process events for the process may be generated.
+    HRESULT ( STDMETHODCALLTYPE *TerminateCurrentProcess )(
+        void* this,
+        ) ;
+    // Attempts to detach from the current process.
+    // This requires OS support for debugger detach.
+    HRESULT ( STDMETHODCALLTYPE *DetachCurrentProcess )(
+        void* this,
+        ) ;
+    // Removes the process from the debuggers process
+    // list without making any other changes.  The process
+    // will still be marked as being debugged and will
+    // not run.  This allows a debugger to be shut down
+    // and a new debugger attached without taking the
+    // process out of the debugged state.
+    // This is only supported on some system versions.
+    HRESULT ( STDMETHODCALLTYPE *AbandonCurrentProcess )(
+        void* this,
+        ) ;
+            END_INTERFACE
+        } IDebugClient2Vtbl, *PDEBUG_CLIENT2;

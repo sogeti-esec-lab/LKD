@@ -1,0 +1,189 @@
+@IID: 88F7DFAB-3EA7-4C3A-AEFB-C4E8106173AA
+typedef struct IDebugDataSpacesVtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugDataSpaces.
+    HRESULT ( STDMETHODCALLTYPE *ReadVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    // SearchVirtual searches the given virtual
+    // address range for the given pattern.  PatternSize
+    // gives the byte length of the pattern and PatternGranularity
+    // controls the granularity of comparisons during
+    // the search.
+    // For example, a DWORD-granular search would
+    // use a pattern granularity of four to search by DWORD
+    // increments.
+    HRESULT ( STDMETHODCALLTYPE *SearchVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Length,
+        __in_bcount(PatternSize) PVOID Pattern,
+        __in ULONG PatternSize,
+        __in ULONG PatternGranularity,
+        __out PULONG64 MatchOffset
+        ) ;
+    // These methods are identical to Read/WriteVirtual
+    // except that they avoid the kernel virtual memory
+    // cache entirely and are therefore useful for reading
+    // virtual memory which is inherently volatile, such
+    // as memory-mapped device areas, without contaminating
+    // or invalidating the cache.
+    // In user-mode they are the same as Read/WriteVirtual.
+    HRESULT ( STDMETHODCALLTYPE *ReadVirtualUncached )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteVirtualUncached )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    // The following two methods are convenience
+    // methods for accessing pointer values.
+    // They automatically convert between native pointers
+    // and canonical 64-bit values as necessary.
+    // These routines stop at the first failure.
+    HRESULT ( STDMETHODCALLTYPE *ReadPointersVirtual )(
+        void* this,
+        __in ULONG Count,
+        __in ULONG64 Offset,
+        __out_ecount(Count) PULONG64 Ptrs
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WritePointersVirtual )(
+        void* this,
+        __in ULONG Count,
+        __in ULONG64 Offset,
+        __in_ecount(Count) PULONG64 Ptrs
+        ) ;
+    // All non-virtual data spaces are only
+    // available when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *ReadPhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WritePhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadControl )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteControl )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadIo )(
+        void* this,
+        __in ULONG InterfaceType,
+        __in ULONG BusNumber,
+        __in ULONG AddressSpace,
+        __in ULONG64 Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteIo )(
+        void* this,
+        __in ULONG InterfaceType,
+        __in ULONG BusNumber,
+        __in ULONG AddressSpace,
+        __in ULONG64 Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadMsr )(
+        void* this,
+        __in ULONG Msr,
+        __out PULONG64 Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteMsr )(
+        void* this,
+        __in ULONG Msr,
+        __in ULONG64 Value
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadBusData )(
+        void* this,
+        __in ULONG BusDataType,
+        __in ULONG BusNumber,
+        __in ULONG SlotNumber,
+        __in ULONG Offset,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteBusData )(
+        void* this,
+        __in ULONG BusDataType,
+        __in ULONG BusNumber,
+        __in ULONG SlotNumber,
+        __in ULONG Offset,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *CheckLowMemory )(
+        void* this,
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadDebuggerData )(
+        void* this,
+        __in ULONG Index,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DataSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadProcessorSystemData )(
+        void* this,
+        __in ULONG Processor,
+        __in ULONG Index,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG DataSize
+        ) ;
+            END_INTERFACE
+        } IDebugDataSpacesVtbl, *PDEBUG_DATA_SPACES;

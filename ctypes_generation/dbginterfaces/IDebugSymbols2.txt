@@ -1,0 +1,563 @@
+@IID: 3A707211-AFDD-4495-AD4F-56FECDF8163F
+typedef struct IDebugSymbols2Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugSymbols.
+
+    // Controls the symbol options used during
+    // symbol operations.
+    // Uses the same flags as dbghelps SymSetOptions.
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolOptions )(
+        void* this,
+        __out PULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddSymbolOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveSymbolOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSymbolOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetNameByOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PULONG64 Displacement
+        ) ;
+    // A symbol name may not be unique, particularly
+    // when overloaded functions exist which all
+    // have the same name.  If GetOffsetByName
+    // finds multiple matches for the name it
+    // can return any one of them.  In that
+    // case it will return S_FALSE to indicate
+    // that ambiguity was arbitrarily resolved.
+    // A caller can then use SearchSymbols to
+    // find all of the matches if it wishes to
+    // perform different disambiguation.
+    HRESULT ( STDMETHODCALLTYPE *GetOffsetByName )(
+        void* this,
+        __in PCSTR Symbol,
+        __out PULONG64 Offset
+        ) ;
+    // GetNearNameByOffset returns symbols
+    // located near the symbol closest to
+    // to the offset, such as the previous
+    // or next symbol.  If Delta is zero it
+    // operates identically to GetNameByOffset.
+    // If Delta is nonzero and such a symbol
+    // does not exist an error is returned.
+    // The next symbol, if one exists, will
+    // always have a higher offset than the
+    // input offset so the displacement is
+    // always negative.  The situation is
+    // reversed for the previous symbol.
+    HRESULT ( STDMETHODCALLTYPE *GetNearNameByOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __in LONG Delta,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PULONG64 Displacement
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetLineByOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __out_opt PULONG Line,
+        __out_ecount_opt(FileBufferSize) PSTR FileBuffer,
+        __in ULONG FileBufferSize,
+        __out_opt PULONG FileSize,
+        __out_opt PULONG64 Displacement
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetOffsetByLine )(
+        void* this,
+        __in ULONG Line,
+        __in PCSTR File,
+        __out PULONG64 Offset
+        ) ;
+
+    // Enumerates the engines list of modules
+    // loaded for the current process.  This may
+    // or may not match the system module list
+    // for the process.  Reload can be used to
+    // synchronize the engines list with the system
+    // if necessary.
+    // Some sessions also track recently unloaded
+    // code modules for help in analyzing failures
+    // where an attempt is made to call unloaded code.
+    // These modules are indexed after the loaded
+    // modules.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberModules )(
+        void* this,
+        __out PULONG Loaded,
+        __out PULONG Unloaded
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetModuleByIndex )(
+        void* this,
+        __in ULONG Index,
+        __out PULONG64 Base
+        ) ;
+    // The module name may not be unique.
+    // This method returns the first match.
+    HRESULT ( STDMETHODCALLTYPE *GetModuleByModuleName )(
+        void* this,
+        __in PCSTR Name,
+        __in ULONG StartIndex,
+        __out_opt PULONG Index,
+        __out_opt PULONG64 Base
+        ) ;
+    // Offset can be any offset within
+    // the module extent.  Extents may
+    // not be unique when including unloaded
+    // drivers.  This method returns the
+    // first match.
+    HRESULT ( STDMETHODCALLTYPE *GetModuleByOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG StartIndex,
+        __out_opt PULONG Index,
+        __out_opt PULONG64 Base
+        ) ;
+    // If Index is DEBUG_ANY_ID the base address
+    // is used to look up the module instead.
+    HRESULT ( STDMETHODCALLTYPE *GetModuleNames )(
+        void* this,
+        __in ULONG Index,
+        __in ULONG64 Base,
+        __out_ecount_opt(ImageNameBufferSize) PSTR ImageNameBuffer,
+        __in ULONG ImageNameBufferSize,
+        __out_opt PULONG ImageNameSize,
+        __out_ecount_opt(ModuleNameBufferSize) PSTR ModuleNameBuffer,
+        __in ULONG ModuleNameBufferSize,
+        __out_opt PULONG ModuleNameSize,
+        __out_ecount_opt(LoadedImageNameBufferSize) PSTR LoadedImageNameBuffer,
+        __in ULONG LoadedImageNameBufferSize,
+        __out_opt PULONG LoadedImageNameSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetModuleParameters )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG64 Bases,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_MODULE_PARAMETERS Params
+        ) ;
+    // Looks up the module from a <Module>!<Symbol>
+    // string.
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolModule )(
+        void* this,
+        __in PCSTR Symbol,
+        __out PULONG64 Base
+        ) ;
+
+    // Returns the string name of a type.
+    HRESULT ( STDMETHODCALLTYPE *GetTypeName )(
+        void* this,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+    // Returns the ID for a type name.
+    HRESULT ( STDMETHODCALLTYPE *GetTypeId )(
+        void* this,
+        __in ULONG64 Module,
+        __in PCSTR Name,
+        __out PULONG TypeId
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetTypeSize )(
+        void* this,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __out PULONG Size
+        ) ;
+    // Given a type which can contain members
+    // this method returns the offset of a
+    // particular member within the type.
+    // TypeId should give the container type ID
+    // and Field gives the dot-separated path
+    // to the field of interest.
+    HRESULT ( STDMETHODCALLTYPE *GetFieldOffset )(
+        void* this,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in PCSTR Field,
+        __out PULONG Offset
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolTypeId )(
+        void* this,
+        __in PCSTR Symbol,
+        __out PULONG TypeId,
+        __out_opt PULONG64 Module
+        ) ;
+    // As with GetOffsetByName a symbol's
+    // name may be ambiguous.  GetOffsetTypeId
+    // returns the type for the symbol closest
+    // to the given offset and can be used
+    // to avoid ambiguity.
+    HRESULT ( STDMETHODCALLTYPE *GetOffsetTypeId )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG TypeId,
+        __out_opt PULONG64 Module
+        ) ;
+
+    // Helpers for virtual and physical data
+    // which combine creation of a location with
+    // the actual operation.
+    HRESULT ( STDMETHODCALLTYPE *ReadTypedDataVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteTypedDataVirtual )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputTypedDataVirtual )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in ULONG Flags
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *ReadTypedDataPhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __out_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesRead
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *WriteTypedDataPhysical )(
+        void* this,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in_bcount(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG BytesWritten
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *OutputTypedDataPhysical )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG64 Offset,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in ULONG Flags
+        ) ;
+
+    // Function arguments and scope block symbols
+    // can be retrieved relative to currently
+    // executing code.  A caller can provide just
+    // a code offset for scoping purposes and look
+    // up names or the caller can provide a full frame
+    // and look up actual values.  The values for
+    // scoped symbols are best-guess and may or may not
+    // be accurate depending on program optimizations,
+    // the machine architecture, the current point
+    // in the programs execution and so on.
+    // A caller can also provide a complete register
+    // context for setting a scope to a previous
+    // machine state such as a context saved for
+    // an exception.  Usually this isnt necessary
+    // and the current register context is used.
+    HRESULT ( STDMETHODCALLTYPE *GetScope )(
+        void* this,
+        __out_opt PULONG64 InstructionOffset,
+        __out_opt PDEBUG_STACK_FRAME ScopeFrame,
+        __out_bcount_opt(ScopeContextSize) PVOID ScopeContext,
+        __in ULONG ScopeContextSize
+        ) ;
+    // If ScopeFrame or ScopeContext is non-NULL then
+    // InstructionOffset is ignored.
+    // If ScopeContext is NULL the current
+    // register context is used.
+    // If the scope identified by the given
+    // information is the same as before
+    // SetScope returns S_OK.  If the scope
+    // information changes, such as when the
+    // scope moves between functions or scope
+    // blocks, SetScope returns S_FALSE.
+    HRESULT ( STDMETHODCALLTYPE *SetScope )(
+        void* this,
+        __in ULONG64 InstructionOffset,
+        __in_opt PDEBUG_STACK_FRAME ScopeFrame,
+        __in_bcount_opt(ScopeContextSize) PVOID ScopeContext,
+        __in ULONG ScopeContextSize
+        ) ;
+    // ResetScope clears the scope information
+    // for situations where scoped symbols
+    // mask global symbols or when resetting
+    // from explicit information to the current
+    // information.
+    HRESULT ( STDMETHODCALLTYPE *ResetScope )(
+        void* this,
+        ) ;
+    // A scope symbol is tied to its particular
+    // scope and only is meaningful within the scope.
+    // The returned group can be updated by passing it back
+    // into the method for lower-cost
+    // incremental updates when stepping.
+    HRESULT ( STDMETHODCALLTYPE *GetScopeSymbolGroup )(
+        void* this,
+        __in ULONG Flags,
+        __in_opt PDEBUG_SYMBOL_GROUP Update,
+        __out PDEBUG_SYMBOL_GROUP* Symbols
+        ) ;
+
+    // Create a new symbol group.
+    HRESULT ( STDMETHODCALLTYPE *CreateSymbolGroup )(
+        void* this,
+        __out PDEBUG_SYMBOL_GROUP* Group
+        ) ;
+
+    // StartSymbolMatch matches symbol names
+    // against the given pattern using simple
+    // regular expressions.  The search results
+    // are iterated through using GetNextSymbolMatch.
+    // When the caller is done examining results
+    // the match should be freed via EndSymbolMatch.
+    // If the match pattern contains a module name
+    // the search is restricted to a single module.
+    // Pattern matching is only done on symbol names,
+    // not module names.
+    // All active symbol match handles are invalidated
+    // when the set of loaded symbols changes.
+    HRESULT ( STDMETHODCALLTYPE *StartSymbolMatch )(
+        void* this,
+        __in PCSTR Pattern,
+        __out PULONG64 Handle
+        ) ;
+    // If Buffer is NULL the match does not
+    // advance.
+    HRESULT ( STDMETHODCALLTYPE *GetNextSymbolMatch )(
+        void* this,
+        __in ULONG64 Handle,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG MatchSize,
+        __out_opt PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *EndSymbolMatch )(
+        void* this,
+        __in ULONG64 Handle
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *Reload )(
+        void* this,
+        __in PCSTR Module
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetSymbolPath )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG PathSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSymbolPath )(
+        void* this,
+        __in PCSTR Path
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AppendSymbolPath )(
+        void* this,
+        __in PCSTR Addition
+        ) ;
+
+    // Manipulate the path for executable images.
+    // Some dump files need to load executable images
+    // in order to resolve dump information.  This
+    // path controls where the engine looks for
+    // images.
+    HRESULT ( STDMETHODCALLTYPE *GetImagePath )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG PathSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetImagePath )(
+        void* this,
+        __in PCSTR Path
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AppendImagePath )(
+        void* this,
+        __in PCSTR Addition
+        ) ;
+
+    // Path routines for source file location
+    // methods.
+    HRESULT ( STDMETHODCALLTYPE *GetSourcePath )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG PathSize
+        ) ;
+    // Gets the nth part of the source path.
+    HRESULT ( STDMETHODCALLTYPE *GetSourcePathElement )(
+        void* this,
+        __in ULONG Index,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ElementSize
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetSourcePath )(
+        void* this,
+        __in PCSTR Path
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AppendSourcePath )(
+        void* this,
+        __in PCSTR Addition
+        ) ;
+    // Uses the given file path and the source path
+    // information to try and locate an existing file.
+    // The given file path is merged with elements
+    // of the source path and checked for existence.
+    // If a match is found the element used is returned.
+    // A starting element can be specified to restrict
+    // the search to a subset of the path elements;
+    // this can be useful when checking for multiple
+    // matches along the source path.
+    // The returned element can be 1, indicating
+    // the file was found directly and not on the path.
+    HRESULT ( STDMETHODCALLTYPE *FindSourceFile )(
+        void* this,
+        __in ULONG StartElement,
+        __in PCSTR File,
+        __in ULONG Flags,
+        __out_opt PULONG FoundElement,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG FoundSize
+        ) ;
+    // Retrieves all the line offset information
+    // for a particular source file.  Buffer is
+    // first intialized to DEBUG_INVALID_OFFSET for
+    // every entry.  Then for each piece of line
+    // symbol information Buffer[Line] set to
+    // Lines offset.  This produces a per-line
+    // map of the offsets for the lines of the
+    // given file.  Line numbers are decremented
+    // for the map so Buffer[0] contains the offset
+    // for line number 1.
+    // If there is no line information at all for
+    // the given file the method fails rather
+    // than returning a map of invalid offsets.
+    HRESULT ( STDMETHODCALLTYPE *GetSourceFileLineOffsets )(
+        void* this,
+        __in PCSTR File,
+        __out_ecount_opt(BufferLines) PULONG64 Buffer,
+        __in ULONG BufferLines,
+        __out_opt PULONG FileLines
+        ) ;
+
+    // IDebugSymbols2.
+
+    // If Index is DEBUG_ANY_ID the base address
+    // is used to look up the module instead.
+    // Item is specified as in VerQueryValue.
+    // Module version information is only
+    // available for loaded modules and may
+    // not be available in all debug sessions.
+    HRESULT ( STDMETHODCALLTYPE *GetModuleVersionInformation )(
+        void* this,
+        __in ULONG Index,
+        __in ULONG64 Base,
+        __in PCSTR Item,
+        __out_bcount_opt(BufferSize) PVOID Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG VerInfoSize
+        ) ;
+    // Retrieves any available module name string
+    // such as module name or symbol file name.
+    // If Index is DEBUG_ANY_ID the base address
+    // is used to look up the module instead.
+    // If symbols are deferred an error will
+    // be returned.
+    // E_NOINTERFACE may be returned, indicating
+    // no information exists.
+    HRESULT ( STDMETHODCALLTYPE *GetModuleNameString )(
+        void* this,
+        __in ULONG Which,
+        __in ULONG Index,
+        __in ULONG64 Base,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+
+    // Returns the string name of a constant type.
+    HRESULT ( STDMETHODCALLTYPE *GetConstantName )(
+        void* this,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in ULONG64 Value,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+
+    // Gets name of a field in a struct
+    // FieldNumber is 0 based index of field in a struct
+    HRESULT ( STDMETHODCALLTYPE *GetFieldName )(
+        void* this,
+        __in ULONG64 Module,
+        __in ULONG TypeId,
+        __in ULONG FieldIndex,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+
+    // Control options for typed values.
+    HRESULT ( STDMETHODCALLTYPE *GetTypeOptions )(
+        void* this,
+        __out PULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *AddTypeOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *RemoveTypeOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetTypeOptions )(
+        void* this,
+        __in ULONG Options
+        ) ;
+            END_INTERFACE
+        } IDebugSymbols2Vtbl, *PDEBUG_SYMBOLS2;

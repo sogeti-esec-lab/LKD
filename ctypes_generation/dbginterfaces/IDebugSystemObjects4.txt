@@ -1,0 +1,365 @@
+@IID: 489468E6-7D0F-4AF5-87AB-25207454D553
+typedef struct IDebugSystemObjects4Vtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugSystemObjects.
+
+    // In user mode debugging the debugger
+    // tracks all threads and processes and
+    // enumerates them through the following
+    // methods.  When enumerating threads
+    // the threads are enumerated for the current
+    // process.
+    // Kernel mode debugging currently is
+    // limited to enumerating only the threads
+    // assigned to processors, not all of
+    // the threads in the system.  Process
+    // enumeration is limited to a single
+    // virtual process representing kernel space.
+
+    // Returns the ID of the thread on which
+    // the last event occurred.
+    HRESULT ( STDMETHODCALLTYPE *GetEventThread )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetEventProcess )(
+        void* this,
+        __out PULONG Id
+        ) ;
+
+    // Controls implicit thread used by the
+    // debug engine.  The debuggers current
+    // thread is just a piece of data held
+    // by the debugger for calls which use
+    // thread-specific information.  In those
+    // calls the debuggers current thread is used.
+    // The debuggers current thread is not related
+    // to any system thread attribute.
+    // IDs for threads are small integer IDs
+    // maintained by the engine.  They are not
+    // related to system thread IDs.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadId )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetCurrentThreadId )(
+        void* this,
+        __in ULONG Id
+        ) ;
+    // The current process is the process
+    // that owns the current thread.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessId )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    // Setting the current process automatically
+    // sets the current thread to the thread that
+    // was last current in that process.
+    HRESULT ( STDMETHODCALLTYPE *SetCurrentProcessId )(
+        void* this,
+        __in ULONG Id
+        ) ;
+
+    // Gets the number of threads in the current process.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberThreads )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    // Gets thread count information for all processes
+    // and the largest number of threads in a single process.
+    HRESULT ( STDMETHODCALLTYPE *GetTotalNumberThreads )(
+        void* this,
+        __out PULONG Total,
+        __out PULONG LargestProcess
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdsByIndex )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount_opt(Count) PULONG Ids,
+        __out_ecount_opt(Count) PULONG SysIds
+        ) ;
+    // Gets the debugger ID for the thread
+    // currently running on the given
+    // processor.  Only works in kernel
+    // debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdByProcessor )(
+        void* this,
+        __in ULONG Processor,
+        __out PULONG Id
+        ) ;
+    // Returns the offset of the current threads
+    // system data structure.  When kernel debugging
+    // this is the offset of the KTHREAD.
+    // When user debugging it is the offset
+    // of the current TEB.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadDataOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // Looks up a debugger thread ID for the given
+    // system thread data structure.
+    // Currently when kernel debugging this will fail
+    // if the thread is not executing on a processor.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdByDataOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG Id
+        ) ;
+    // Returns the offset of the current threads
+    // TEB.  In user mode this is equivalent to
+    // the threads data offset.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadTeb )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // Looks up a debugger thread ID for the given TEB.
+    // Currently when kernel debugging this will fail
+    // if the thread is not executing on a processor.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdByTeb )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG Id
+        ) ;
+    // Returns the system unique ID for the current thread.
+    // Not currently supported when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadSystemId )(
+        void* this,
+        __out PULONG SysId
+        ) ;
+    // Looks up a debugger thread ID for the given
+    // system thread ID.
+    // Currently when kernel debugging this will fail
+    // if the thread is not executing on a processor.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdBySystemId )(
+        void* this,
+        __in ULONG SysId,
+        __out PULONG Id
+        ) ;
+    // Returns the handle of the current thread.
+    // In kernel mode the value returned is the
+    // index of the processor the thread is
+    // executing on plus one.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadHandle )(
+        void* this,
+        __out PULONG64 Handle
+        ) ;
+    // Looks up a debugger thread ID for the given handle.
+    // Currently when kernel debugging this will fail
+    // if the thread is not executing on a processor.
+    HRESULT ( STDMETHODCALLTYPE *GetThreadIdByHandle )(
+        void* this,
+        __in ULONG64 Handle,
+        __out PULONG Id
+        ) ;
+
+    // Currently kernel mode sessions will only have
+    // a single process representing kernel space.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberProcesses )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetProcessIdsByIndex )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount_opt(Count) PULONG Ids,
+        __out_ecount_opt(Count) PULONG SysIds
+        ) ;
+    // Returns the offset of the current processs
+    // system data structure.  When kernel debugging
+    // this is the offset of the KPROCESS of
+    // the process that owns the current thread.
+    // When user debugging it is the offset
+    // of the current PEB.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessDataOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // Looks up a debugger process ID for the given
+    // system process data structure.
+    // Not currently supported when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessIdByDataOffset )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG Id
+        ) ;
+    // Returns the offset of the current processs
+    // PEB.  In user mode this is equivalent to
+    // the processs data offset.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessPeb )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    // Looks up a debugger process ID for the given PEB.
+    // Not currently supported when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessIdByPeb )(
+        void* this,
+        __in ULONG64 Offset,
+        __out PULONG Id
+        ) ;
+    // Returns the system unique ID for the current process.
+    // Not currently supported when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessSystemId )(
+        void* this,
+        __out PULONG SysId
+        ) ;
+    // Looks up a debugger process ID for the given
+    // system process ID.
+    // Not currently supported when kernel debugging.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessIdBySystemId )(
+        void* this,
+        __in ULONG SysId,
+        __out PULONG Id
+        ) ;
+    // Returns the handle of the current process.
+    // In kernel mode this is the kernel processs
+    // artificial handle used for symbol operations
+    // and so can only be used with dbghelp APIs.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessHandle )(
+        void* this,
+        __out PULONG64 Handle
+        ) ;
+    // Looks up a debugger process ID for the given handle.
+    HRESULT ( STDMETHODCALLTYPE *GetProcessIdByHandle )(
+        void* this,
+        __in ULONG64 Handle,
+        __out PULONG Id
+        ) ;
+    // Retrieve the name of the executable loaded
+    // in the process.  This may fail if no executable
+    // was identified.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessExecutableName )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ExeSize
+        ) ;
+
+    // IDebugSystemObjects2.
+
+    // Return the number of seconds that the current
+    // process has been running.
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessUpTime )(
+        void* this,
+        __out PULONG UpTime
+        ) ;
+
+    // During kernel sessions the debugger retrieves
+    // some information from the system thread and process
+    // running on the current processor.  For example,
+    // the debugger will retrieve virtual memory translation
+    // information for when the debugger needs to
+    // carry out its own virtual to physical translations.
+    // Occasionally it can be interesting to perform
+    // similar operations but on a process which isnt
+    // currently running.  The follow methods allow a caller
+    // to override the data offsets used by the debugger
+    // so that other system threads and processes can
+    // be used instead.  These values are defaulted to
+    // the thread and process running on the current
+    // processor each time the debuggee executes or
+    // the current processor changes.
+    // The thread and process settings are independent so
+    // it is possible to refer to a thread in a process
+    // other than the current process and vice versa.
+    // Setting an offset of zero will reload the
+    // default value.
+    HRESULT ( STDMETHODCALLTYPE *GetImplicitThreadDataOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetImplicitThreadDataOffset )(
+        void* this,
+        __in ULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetImplicitProcessDataOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetImplicitProcessDataOffset )(
+        void* this,
+        __in ULONG64 Offset
+        ) ;
+
+    // IDebugSystemObjects3.
+
+    HRESULT ( STDMETHODCALLTYPE *GetEventSystem )(
+        void* this,
+        __out PULONG Id
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentSystemId )(
+        void* this,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetCurrentSystemId )(
+        void* this,
+        __in ULONG Id
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetNumberSystems )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSystemIdsByIndex )(
+        void* this,
+        __in ULONG Start,
+        __in ULONG Count,
+        __out_ecount(Count) PULONG Ids
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetTotalNumberThreadsAndProcesses )(
+        void* this,
+        __out PULONG TotalThreads,
+        __out PULONG TotalProcesses,
+        __out PULONG LargestProcessThreads,
+        __out PULONG LargestSystemThreads,
+        __out PULONG LargestSystemProcesses
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentSystemServer )(
+        void* this,
+        __out PULONG64 Server
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetSystemByServer )(
+        void* this,
+        __in ULONG64 Server,
+        __out PULONG Id
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentSystemServerName )(
+        void* this,
+        __out_ecount_opt(BufferSize) PSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+
+    // IDebugSystemObjects4.
+
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentProcessExecutableNameWide )(
+        void* this,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG ExeSize
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetCurrentSystemServerNameWide )(
+        void* this,
+        __out_ecount_opt(BufferSize) PWSTR Buffer,
+        __in ULONG BufferSize,
+        __out_opt PULONG NameSize
+        ) ;
+            END_INTERFACE
+        } IDebugSystemObjects4Vtbl, *PDEBUG_SYSTEM_OBJECTS4;

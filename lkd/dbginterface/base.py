@@ -31,7 +31,7 @@ class DbgEngProxy(windows.winproxy.ApiProxy):
 
 class DbgHelpProxy(windows.winproxy.ApiProxy):
     APIDLL = "dbghelp.dll"
-    default_error_check = staticmethod(windows.winproxy.kernel32_zero_check)
+    default_error_check = staticmethod(windows.winproxy.kernel32_error_check)
 
 
 @DbgEngProxy("DebugCreate", deffunc_module=lkd.dbgfuncs)
@@ -109,9 +109,9 @@ class BaseKernelDebugger(object):
         self.DebugSymbols = IDebugSymbols3(0)
         self.DebugControl = IDebugControl(0)
 
-        DebugClient.QueryInterface(self.DebugDataSpaces.IID, byref(self.DebugDataSpaces))
-        DebugClient.QueryInterface(self.DebugSymbols.IID, byref(self.DebugSymbols))
-        DebugClient.QueryInterface(self.DebugControl.IID, byref(self.DebugControl))
+        DebugClient.QueryInterface(self.DebugDataSpaces.IID, self.DebugDataSpaces)
+        DebugClient.QueryInterface(self.DebugSymbols.IID, self.DebugSymbols)
+        DebugClient.QueryInterface(self.DebugControl.IID, self.DebugControl)
 
     def _setup_symbols_options(self):
         symbol_path = os.environ.get('_NT_SYMBOL_PATH', self.DEFAULT_SYMBOL_PATH)
@@ -221,7 +221,7 @@ class BaseKernelDebugger(object):
         if to_string:
             old_output = self._output_callback
             self._init_string_output_callback()
-        self.DebugControl.Execute(0, str, 0)
+        self.DebugControl.Execute(0, str, lkd.dbgdef.DEBUG_EXECUTE_NO_REPEAT)
         if to_string:
             if old_output is None:
                 old_output = self._standard_output_callback
@@ -306,7 +306,7 @@ class BaseKernelDebugger(object):
         :param name: Name of the symbol
         :type name: str
         :rtype: int"""
-        print("[TODO]: REMOVE ME")
+        #print("[TODO]: REMOVE ME (get_symbol_offset: {0})".format(name))
         if name in self._internal_offset_cache:
             return self._internal_offset_cache[name]
         print("[RESOLVING] {0}".format(name))
@@ -324,7 +324,7 @@ class BaseKernelDebugger(object):
         :param addr: The address to lookup
         :type addr: int
         :rtype: str, int -- symbol name, displacement"""
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         addr = self.expand_address_to_ulong64(addr)
         buffer_size = 1024
         buffer = (c_char * buffer_size)()

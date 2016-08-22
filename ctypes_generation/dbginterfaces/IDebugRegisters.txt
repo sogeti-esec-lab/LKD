@@ -1,0 +1,104 @@
+@IID: CE289126-9E84-45A7-937E-67BB18691493
+typedef struct IDebugRegistersVtbl
+        {
+            BEGIN_INTERFACE
+            // IUnknown.
+    HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+        void* this,
+        __in REFIID InterfaceId,
+        __out PVOID* Interface
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *AddRef )(
+        void* this,
+        ) ;
+    ULONG ( STDMETHODCALLTYPE *Release )(
+        void* this,
+        ) ;
+
+    // IDebugRegisters.
+    HRESULT ( STDMETHODCALLTYPE *GetNumberRegisters )(
+        void* this,
+        __out PULONG Number
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetDescription )(
+        void* this,
+        __in ULONG Register,
+        __out_ecount_opt(NameBufferSize) PSTR NameBuffer,
+        __in ULONG NameBufferSize,
+        __out_opt PULONG NameSize,
+        __out_opt PDEBUG_REGISTER_DESCRIPTION Desc
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetIndexByName )(
+        void* this,
+        __in PCSTR Name,
+        __out PULONG Index
+        ) ;
+
+    HRESULT ( STDMETHODCALLTYPE *GetValue )(
+        void* this,
+        __in ULONG Register,
+        __out PDEBUG_VALUE Value
+        ) ;
+    // SetValue makes a best effort at coercing
+    // the given value into the given registers
+    // value type.  If the given value is larger
+    // than the register can hold the least
+    // significant bits will be dropped.  Float
+    // to int and int to float will be done
+    // if necessary.  Subregister bits will be
+    // inserted into the master register.
+    HRESULT ( STDMETHODCALLTYPE *SetValue )(
+        void* this,
+        __in ULONG Register,
+        __in PDEBUG_VALUE Value
+        ) ;
+    // Gets Count register values.  If Indices is
+    // non-NULL it must contain Count register
+    // indices which control the registers affected.
+    // If Indices is NULL the registers from Start
+    // to Start + Count  1 are retrieved.
+    HRESULT ( STDMETHODCALLTYPE *GetValues )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __out_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *SetValues )(
+        void* this,
+        __in ULONG Count,
+        __in_ecount_opt(Count) PULONG Indices,
+        __in ULONG Start,
+        __in_ecount(Count) PDEBUG_VALUE Values
+        ) ;
+
+    // Outputs a group of registers in a well-formatted
+    // way thats specific to the platforms register set.
+    // Uses the line prefix.
+    HRESULT ( STDMETHODCALLTYPE *OutputRegisters )(
+        void* this,
+        __in ULONG OutputControl,
+        __in ULONG Flags
+        ) ;
+
+    // Abstracted pieces of processor information.
+    // The mapping of these values to architectural
+    // registers is architecture-specific and their
+    // interpretation and existence may vary.  They
+    // are intended to be directly compatible with
+    // calls which take this information, such as
+    // stack walking.
+    HRESULT ( STDMETHODCALLTYPE *GetInstructionOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetStackOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+    HRESULT ( STDMETHODCALLTYPE *GetFrameOffset )(
+        void* this,
+        __out PULONG64 Offset
+        ) ;
+            END_INTERFACE
+        } IDebugRegistersVtbl, *PDEBUG_REGISTERS;
