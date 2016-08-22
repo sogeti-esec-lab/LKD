@@ -1,0 +1,3 @@
+[submodule "PythonForWindows"]
+	path = PythonForWindows
+	url = https://github.com/hakril/PythonForWindows
